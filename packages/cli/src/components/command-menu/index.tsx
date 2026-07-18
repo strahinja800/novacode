@@ -1,4 +1,6 @@
 import { TextAttributes } from '@opentui/core'
+import type { ScrollBoxRenderable } from 'node_modules/@opentui/core/renderables/ScrollBox'
+import type { RefObject } from 'react'
 
 import { COMMANDS } from '@/constants/commands'
 
@@ -12,6 +14,7 @@ type CommandMenuProps = {
   selectedIndex: number
   onSelect: (index: number) => void
   onExecute: (index: number) => void
+  scrollRef: RefObject<ScrollBoxRenderable | null>
 }
 
 export default function CommandMenu({
@@ -19,6 +22,7 @@ export default function CommandMenu({
   selectedIndex,
   onSelect,
   onExecute,
+  scrollRef,
 }: CommandMenuProps) {
   const filtered = getFilteredCommands(query)
   const visibleHeight = Math.min(filtered.length, MAX_VISIBLE_COMMANDS)
@@ -33,7 +37,7 @@ export default function CommandMenu({
 
   return (
     <scrollbox
-      // ref={scrollRef}
+      ref={scrollRef}
       height={visibleHeight}
     >
       {filtered.map((cmd, i) => {

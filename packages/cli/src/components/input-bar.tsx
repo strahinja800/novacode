@@ -29,9 +29,11 @@ export function InputBar({ onSubmit, disabled = false }: Props) {
     setSelectedIndex,
   } = UseCommandMenu()
 
-  const handleCommandExecute = useCallback(() => {}, [])
+  const handleCommandExecute = useCallback((index: number) => {
+    const command = resolveCommand(index)
+  }, [])
 
-  const handleTextareaConstentChange = useCallback(() => {
+  const handleTextareaContentChange = useCallback(() => {
     const textarea = textareaRef.current
     if (!textarea) return
 
@@ -60,7 +62,10 @@ export function InputBar({ onSubmit, disabled = false }: Props) {
 
       if (command.action) {
         command.action({
-          exit: () => renderer.destroy(),
+          exit: () => {
+            renderer.destroy()
+            process.exit(0)
+          },
         })
       } else {
         textarea.insertText(command.value + ' ')
@@ -110,7 +115,7 @@ export function InputBar({ onSubmit, disabled = false }: Props) {
           minWidth={'100%'}
           gap={1}
         >
-          {true && (
+          {showCommandMenu && (
             <box
               position='absolute'
               bottom={'100%'}
@@ -131,7 +136,7 @@ export function InputBar({ onSubmit, disabled = false }: Props) {
           <textarea
             ref={textareaRef}
             focused={!disabled}
-            onContentChange={handleTextareaConstentChange}
+            onContentChange={handleTextareaContentChange}
             keyBindings={TEXTAREA_KEYBINDINGS}
             placeholder={`Ask anything... 'Fix a bug in database'`}
           />

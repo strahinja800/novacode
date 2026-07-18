@@ -1,5 +1,6 @@
 import { useRenderer } from '@opentui/react'
 import type { TextareaRenderable } from 'node_modules/@opentui/core/renderables/Textarea'
+import process from 'process'
 import { useCallback, useEffect, useRef } from 'react'
 
 import { TEXTAREA_KEYBINDINGS } from '@/constants/textarea-keybinding'

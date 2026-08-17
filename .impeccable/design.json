@@ -1,0 +1,457 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-08-17T20:45:00.000Z",
+  "title": "Design System: NovaCode",
+  "extensions": {
+    "colorMeta": {
+      "ground": {
+        "role": "neutral",
+        "displayName": "Ground",
+        "canonical": "terminal default background",
+        "note": "RGBA.defaultBackground(). Not a chosen tone — the terminal's own background, showing through. There is no value to record; the approximation below exists only so the preview panel has something to paint.",
+        "tonalRamp": [
+          "#000000",
+          "#08080a",
+          "#101014",
+          "#18181d",
+          "#202027",
+          "#2a2a32",
+          "#35353f",
+          "#42424e"
+        ]
+      },
+      "raised": {
+        "role": "neutral",
+        "displayName": "Raised",
+        "canonical": "ansi:0",
+        "note": "RGBA.fromIndex(0). The input bar and the toast. On a profile whose background is already near black this step disappears, which is why the accent rule is structural rather than decorative.",
+        "tonalRamp": [
+          "#000000",
+          "#0d0d0d",
+          "#1a1a1a",
+          "#262626",
+          "#333333",
+          "#404040",
+          "#4d4d4d",
+          "#595959"
+        ]
+      },
+      "overlay": {
+        "role": "neutral",
+        "displayName": "Overlay",
+        "canonical": "ansi:8",
+        "note": "RGBA.fromIndex(8), bright black. The command menu and the dialog. The third and final surface — the ANSI palette offers no fourth.",
+        "tonalRamp": [
+          "#1a1a1a",
+          "#333333",
+          "#4d4d4d",
+          "#666666",
+          "#808080",
+          "#999999",
+          "#b3b3b3",
+          "#cccccc"
+        ]
+      },
+      "fg": {
+        "role": "neutral",
+        "displayName": "Foreground",
+        "canonical": "terminal default foreground",
+        "note": "RGBA.defaultForeground(). Command names, input text, the model name. By definition already correct against the user's ground, which is the reason it is the default for all text.",
+        "tonalRamp": [
+          "#2b2b2b",
+          "#454545",
+          "#5f5f5f",
+          "#7a7a7a",
+          "#949494",
+          "#aeaeae",
+          "#d4d4d4",
+          "#ffffff"
+        ]
+      },
+      "muted": {
+        "role": "neutral",
+        "displayName": "Muted",
+        "canonical": "ansi:7",
+        "note": "RGBA.fromIndex(7). Descriptions, the recessed half of the wordmark, the status separator, dialog titles. Paired with the DIM attribute wherever the element accepts attributes — the wordmark is the one place it cannot, and that is a recorded tension.",
+        "tonalRamp": [
+          "#1e1e1e",
+          "#333333",
+          "#4d4d4d",
+          "#6b6b6b",
+          "#8a8a8a",
+          "#a8a8a8",
+          "#c0c0c0",
+          "#dedede"
+        ]
+      },
+      "inverse": {
+        "role": "neutral",
+        "displayName": "Inverse",
+        "canonical": "ansi:0",
+        "note": "RGBA.fromIndex(0). Text on a selected row, where the selection fill inverts the row. Shares a slot with Raised because both are 'the darkest thing available'; they never meet on the same element.",
+        "tonalRamp": [
+          "#000000",
+          "#0d0d0d",
+          "#1a1a1a",
+          "#262626",
+          "#333333",
+          "#404040",
+          "#4d4d4d",
+          "#595959"
+        ]
+      },
+      "accent": {
+        "role": "primary",
+        "displayName": "Accent",
+        "canonical": "ansi:6",
+        "note": "RGBA.fromIndex(6) in the default theme, and the one role a theme preset is allowed to move. The system's only light source: the input's left rule, the active agent, the dialog's left rule. Rationed to two per resting screen.",
+        "tonalRamp": [
+          "#002020",
+          "#003535",
+          "#004a4a",
+          "#006060",
+          "#008080",
+          "#00a0a0",
+          "#00c0c0",
+          "#66e0e0"
+        ]
+      },
+      "selection": {
+        "role": "secondary",
+        "displayName": "Selection",
+        "canonical": "ansi:4",
+        "note": "RGBA.fromIndex(4) in the default theme, moved by presets alongside the accent. The selected row fill in the command menu and every dialog list — the only saturated field in the system, and only ever one row of it.",
+        "tonalRamp": [
+          "#000020",
+          "#000035",
+          "#00004a",
+          "#000060",
+          "#000080",
+          "#0000a0",
+          "#3333c0",
+          "#6666e0"
+        ]
+      },
+      "state-success": {
+        "role": "tertiary",
+        "displayName": "Confirm",
+        "canonical": "ansi:2",
+        "note": "RGBA.fromIndex(2). Toast border only. Transient — never permitted in resting chrome.",
+        "tonalRamp": [
+          "#002000",
+          "#003500",
+          "#004a00",
+          "#006000",
+          "#008000",
+          "#00a000",
+          "#00c000",
+          "#66e066"
+        ]
+      },
+      "state-error": {
+        "role": "tertiary",
+        "displayName": "Alert",
+        "canonical": "ansi:1",
+        "note": "RGBA.fromIndex(1). Toast border only. Transient — never permitted in resting chrome.",
+        "tonalRamp": [
+          "#200000",
+          "#350000",
+          "#4a0000",
+          "#600000",
+          "#800000",
+          "#a00000",
+          "#c03333",
+          "#e06666"
+        ]
+      },
+      "state-info": {
+        "role": "tertiary",
+        "displayName": "Info",
+        "canonical": "ansi:6",
+        "note": "RGBA.fromIndex(6). Toast border only. Shares the accent's slot, which is acceptable because a toast is transient and the accent is resting — they are never both explaining the same thing.",
+        "tonalRamp": [
+          "#002020",
+          "#003535",
+          "#004a4a",
+          "#006060",
+          "#008080",
+          "#00a0a0",
+          "#00c0c0",
+          "#66e0e0"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "The NovaCode ASCII wordmark at the shell's top row. The only element permitted more than one row of vertical type, and it appears exactly once."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "The default state of all text: command names, input text, model name. One terminal cell, inherited monospace, never overridden."
+      },
+      "muted": {
+        "displayName": "Muted",
+        "purpose": "The DIM attribute applied to anything the visitor is not acting on: command descriptions, the status separator, dialog titles, empty states."
+      }
+    },
+    "themes": [
+      {
+        "name": "Night Console",
+        "description": "Signal cyan on the dark you already have",
+        "accent": "ansi:6",
+        "selection": "ansi:4",
+        "default": true
+      },
+      {
+        "name": "Ember",
+        "description": "A warmer rule down the left edge",
+        "accent": "ansi:3",
+        "selection": "ansi:1",
+        "default": false
+      },
+      {
+        "name": "Moss",
+        "description": "Quiet green, easiest on a bright room",
+        "accent": "ansi:2",
+        "selection": "ansi:10",
+        "default": false
+      },
+      {
+        "name": "Orchid",
+        "description": "Magenta accent for terminals that lean cool",
+        "accent": "ansi:5",
+        "selection": "ansi:13",
+        "default": false
+      }
+    ],
+    "themeMeta": {
+      "storage": "~/.novacode/preferences.json",
+      "shape": "{ \"themeName\": string }",
+      "failureMode": "Advisory. A missing file, malformed JSON, or an unknown theme name all resolve to the default rather than blocking startup. Unrelated keys survive a write.",
+      "note": "Every preset shares one surface and text vocabulary and moves only the accent and selection roles. That is a consequence of staying on the ANSI palette: there is no room for bespoke ramps, and the restraint matches the rationing already imposed on the accent."
+    },
+    "shadows": [],
+    "motion": [
+      {
+        "name": "toast-dwell",
+        "value": "3000ms",
+        "purpose": "How long a toast stays before clearing. There is no enter or exit transition — the terminal cannot composite, so a toast appears and is gone. Dwell time is the only duration token the system has."
+      },
+      {
+        "name": "theme-preview",
+        "value": "0ms",
+        "purpose": "Moving the highlight through the theme list repaints the whole interface on the same frame. Instant is not a shortcut here: a swatch cannot show what a palette reference resolves to, so the real interface is the preview."
+      },
+      {
+        "name": "target-fps",
+        "value": "60",
+        "purpose": "Renderer frame budget set in createCliRenderer. Layout work must stay cheap enough to hold it while the user types."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "content-max",
+        "value": "78 cells",
+        "purpose": "Max content column width. Beyond this the shell centers rather than stretching."
+      },
+      {
+        "name": "dialog-max",
+        "value": "64 cells",
+        "purpose": "Dialog width ceiling, clamped further to terminalWidth - 6 on narrow terminals."
+      },
+      {
+        "name": "toast-max",
+        "value": "60 cells",
+        "purpose": "Toast width ceiling, clamped further to terminalWidth - 6 on narrow terminals."
+      },
+      {
+        "name": "menu-max-rows",
+        "value": "8 rows",
+        "purpose": "Visible command menu height before scrolling."
+      },
+      {
+        "name": "dialog-list-max-rows",
+        "value": "6 rows",
+        "purpose": "Visible dialog list height before scrolling. Two fewer than the command menu, because a dialog also spends rows on a title and a filter input."
+      }
+    ],
+    "mediumNote": "This project renders to terminal cells through @opentui/react, not to the DOM. There is no CSS, no radius, no shadow, and no subpixel layout. The html and css on each component below are a preview approximation for this panel only — they are not the implementation, and the hex values in them stand in for ANSI palette slots the user's terminal actually resolves. The implementation constructs every color with RGBA.fromIndex or a terminal default; a hex value in src/ would be a defect."
+  },
+  "components": [
+    {
+      "name": "Input Bar",
+      "kind": "input",
+      "refersTo": "input-bar",
+      "description": "The resting interface's primary accent carrier: a raised field fronted by a single accent rule on its left edge. Enter submits, Shift+Enter newlines.",
+      "html": "<div class=\"ds-input-bar\"><div class=\"ds-input-bar__field\"><div class=\"ds-input-bar__placeholder\">Ask anything... 'Fix a bug in database'</div><div class=\"ds-status-bar\"><span class=\"ds-status-bar__agent\">Build</span><span class=\"ds-status-bar__sep\">&rsaquo;</span><span class=\"ds-status-bar__model\">opus-4-6</span></div></div></div>",
+      "css": ".ds-input-bar { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 14px; line-height: 1.6; max-width: 44em; } .ds-input-bar__field { background: #000000; border-left: 2px solid #008080; padding: 1.6em 2ch; display: flex; flex-direction: column; gap: 1.6em; } .ds-input-bar__placeholder { color: #808080; } .ds-status-bar { display: flex; gap: 1ch; } .ds-status-bar__agent { color: #008080; } .ds-status-bar__sep { color: #c0c0c0; opacity: 0.6; } .ds-status-bar__model { color: #e8e8e8; }"
+    },
+    {
+      "name": "Command Menu",
+      "kind": "nav",
+      "refersTo": "command-menu",
+      "description": "A floating list on Overlay, borderless, anchored above the input and capped at 8 rows. The selected row inverts entirely and drops DIM so it reads as one block.",
+      "html": "<div class=\"ds-cmd\"><div class=\"ds-cmd__row\"><span class=\"ds-cmd__name\">/new</span><span class=\"ds-cmd__desc\">Start a new conversation</span></div><div class=\"ds-cmd__row ds-cmd__row--sel\"><span class=\"ds-cmd__name\">/theme</span><span class=\"ds-cmd__desc\">Change color theme</span></div><div class=\"ds-cmd__row\"><span class=\"ds-cmd__name\">/exit</span><span class=\"ds-cmd__desc\">Exit the application</span></div></div>",
+      "css": ".ds-cmd { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 14px; background: #808080; max-width: 44em; } .ds-cmd__row { display: flex; padding: 0 1ch; height: 1.6em; align-items: center; overflow: hidden; } .ds-cmd__name { width: 11ch; flex-shrink: 0; color: #ffffff; } .ds-cmd__desc { color: #d8d8d8; opacity: 0.65; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .ds-cmd__row--sel { background: #000080; } .ds-cmd__row--sel .ds-cmd__name, .ds-cmd__row--sel .ds-cmd__desc { color: #000000; opacity: 1; }"
+    },
+    {
+      "name": "Dialog",
+      "kind": "custom",
+      "refersTo": "dialog",
+      "description": "The system's one modal surface: an Overlay field centered on both axes, a single accent rule on its left edge, and a DIM title row above a one-cell gap. It owns the top keyboard layer while open.",
+      "html": "<div class=\"ds-dialog\"><div class=\"ds-dialog__title\">Select theme</div><div class=\"ds-dialog__body\">&hellip;</div></div>",
+      "css": ".ds-dialog { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 14px; line-height: 1.6; background: #808080; border-left: 2px solid #008080; padding: 1.6em 2ch; max-width: 40em; display: flex; flex-direction: column; gap: 1.6em; } .ds-dialog__title { color: #d8d8d8; opacity: 0.65; } .ds-dialog__body { color: #ffffff; }"
+    },
+    {
+      "name": "Dialog Search List",
+      "kind": "custom",
+      "refersTo": "dialog-search-list",
+      "description": "The reusable body of every dialog: a filter input above a list capped at 6 rows. Generic over its item type, so every future picker is a filter function and a row rather than a new component.",
+      "html": "<div class=\"ds-dsl\"><div class=\"ds-dsl__input\">Filter themes...</div><div class=\"ds-dsl__list\"><div class=\"ds-dsl__row\"><span class=\"ds-dsl__marker\">&bull;</span><span class=\"ds-dsl__name\">Night Console</span><span class=\"ds-dsl__desc\">Signal cyan on the dark you already have</span></div><div class=\"ds-dsl__row ds-dsl__row--sel\"><span class=\"ds-dsl__marker\"></span><span class=\"ds-dsl__name\">Moss</span><span class=\"ds-dsl__desc\">Quiet green, easiest on a bright room</span></div></div></div>",
+      "css": ".ds-dsl { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 14px; display: flex; flex-direction: column; gap: 1.6em; max-width: 40em; } .ds-dsl__input { color: #808080; border-bottom: 1px solid #5a5a5a; padding-bottom: 0.2em; } .ds-dsl__row { display: flex; padding: 0 1ch; height: 1.6em; align-items: center; overflow: hidden; } .ds-dsl__marker { width: 2ch; flex-shrink: 0; color: #008080; } .ds-dsl__name { width: 17ch; flex-shrink: 0; color: #ffffff; } .ds-dsl__desc { color: #d8d8d8; opacity: 0.65; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .ds-dsl__row--sel { background: #000080; } .ds-dsl__row--sel .ds-dsl__name, .ds-dsl__row--sel .ds-dsl__desc, .ds-dsl__row--sel .ds-dsl__marker { color: #000000; opacity: 1; }"
+    },
+    {
+      "name": "Status Bar",
+      "kind": "custom",
+      "refersTo": "status-bar",
+      "description": "One row, three parts: the active agent in the accent, a DIM separator, the model name in Foreground. It states two facts and adds nothing.",
+      "html": "<div class=\"ds-status-bar\"><span class=\"ds-status-bar__agent\">Build</span><span class=\"ds-status-bar__sep\">&rsaquo;</span><span class=\"ds-status-bar__model\">opus-4-6</span></div>",
+      "css": ".ds-status-bar { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 14px; display: flex; gap: 1ch; } .ds-status-bar__agent { color: #008080; } .ds-status-bar__sep { color: #c0c0c0; opacity: 0.6; } .ds-status-bar__model { color: #e8e8e8; }"
+    },
+    {
+      "name": "Toast — Info",
+      "kind": "custom",
+      "refersTo": "toast",
+      "description": "Transient and bracketed: a Raised field with left and right borders in the variant color. It does not animate, because it cannot.",
+      "html": "<div class=\"ds-toast ds-toast--info\">Switching models...</div>",
+      "css": ".ds-toast { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 14px; line-height: 1.6; background: #000000; color: #e8e8e8; padding: 1.6em 2ch; max-width: 34em; } .ds-toast--info { border-left: 2px solid #008080; border-right: 2px solid #008080; }"
+    },
+    {
+      "name": "Toast — Success",
+      "kind": "custom",
+      "refersTo": "toast",
+      "description": "The confirm variant. Border color is the only difference; the transience is the second signal that keeps it off color alone.",
+      "html": "<div class=\"ds-toast ds-toast--success\">Signed out</div>",
+      "css": ".ds-toast { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 14px; line-height: 1.6; background: #000000; color: #e8e8e8; padding: 1.6em 2ch; max-width: 34em; } .ds-toast--success { border-left: 2px solid #008000; border-right: 2px solid #008000; }"
+    },
+    {
+      "name": "Toast — Error",
+      "kind": "custom",
+      "refersTo": "toast",
+      "description": "The alert variant. Same field, same dwell; only the bracket changes.",
+      "html": "<div class=\"ds-toast ds-toast--error\">Not enough credits</div>",
+      "css": ".ds-toast { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 14px; line-height: 1.6; background: #000000; color: #e8e8e8; padding: 1.6em 2ch; max-width: 34em; } .ds-toast--error { border-left: 2px solid #800000; border-right: 2px solid #800000; }"
+    },
+    {
+      "name": "Header Wordmark",
+      "kind": "custom",
+      "refersTo": "app-shell",
+      "description": "The single decorative element: two ascii-font words with a half-cell gap, Nova recessed and Code at full foreground. Code deliberately does not take the accent — the left rule and the status bar have already spent the two slots.",
+      "html": "<div class=\"ds-wordmark\"><span class=\"ds-wordmark__a\">Nova</span><span class=\"ds-wordmark__b\">Code</span></div>",
+      "css": ".ds-wordmark { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 22px; letter-spacing: 0.08em; display: flex; gap: 0.5ch; } .ds-wordmark__a { color: #c0c0c0; } .ds-wordmark__b { color: #ffffff; }"
+    },
+    {
+      "name": "Empty State",
+      "kind": "custom",
+      "refersTo": "command-menu",
+      "description": "A single DIM line on the same overlay. No illustration, no suggestion, no retry affordance — one row is the whole answer.",
+      "html": "<div class=\"ds-empty\">No commands found</div>",
+      "css": ".ds-empty { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 14px; background: #808080; color: #d8d8d8; opacity: 0.65; padding: 0 1ch; height: 1.6em; line-height: 1.6em; max-width: 44em; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Night Console",
+    "overview": "NovaCode does not paint a dark theme. It assumes the night that is already there. A solo builder running this at 2am has their emulator dialed in exactly how they like it, and the assistant arrives as a quiet console inside that existing dark, not as an application that repaints the room. Everything here follows from that posture: the ground *is* the terminal's own background, chrome earns every row it occupies, and a single accent rule down the left edge of the input is the only thing in the frame that behaves like a light source.\n\nThe system is deliberately poor in effects, because the medium is poor in effects. There is no shadow, no blur, no gradient, no radius, no font size, and no weight. Depth exists only as three flat tones stacked on each other. Hierarchy exists only as color, the DIM attribute, and one ASCII wordmark that is allowed to be three rows tall. Working inside that poverty is the discipline of the system, not a limitation it apologizes for.\n\nThe character is restrained and precise. Components read as instruments that have been tuned rather than surfaces that have been styled: partial borders instead of frames, one-row list items, a status line that states the agent and model and nothing else. When the visitor is thinking about their code, the interface should be the least interesting thing on the screen — and then be immediately exact the moment they reach for it.",
+    "keyCharacteristics": [
+      "Every color is a palette reference; the terminal owns the actual values",
+      "Three flat surfaces, no shadows, no elevation vocabulary at all",
+      "One rationed accent as a light source, never as decoration",
+      "The left border rule — partial borders, never a closed box",
+      "One-cell typography; hierarchy carried by color and DIM, never by size",
+      "A three-step spacing scale (0.5 / 1 / 2 cells) and nothing between",
+      "Chrome that recedes during work and resolves instantly on demand"
+    ],
+    "rules": [
+      {
+        "name": "The Terminal's Theme Wins Rule",
+        "body": "Every color in the system is a palette reference or a terminal default. There are no hex values anywhere in src/, and that is a verifiable property, not an aspiration: `grep -rE '#[0-9a-fA-F]{6}' packages/cli/src` must return nothing. Reaching for a hex value, or for a named color string, requires a reason that survives a 16-color terminal — and so far no such reason has come up. Because the terminal is the authority, the system cannot guarantee any particular contrast ratio; it guarantees only that it never fights the profile the user already chose. The compensating discipline is The Never-Only-Color Rule.",
+        "section": "colors"
+      },
+      {
+        "name": "The One Cyan Rule",
+        "body": "The accent appears at most twice on a resting screen: the active input's left rule, and the active agent. A dialog's left rule replaces neither — while a dialog is open it owns the accent budget, because the input behind it is no longer the thing being acted on. If a third accent element is proposed, something else gives it up first. Its rarity is what makes it read as attention rather than as branding.",
+        "section": "colors"
+      },
+      {
+        "name": "The Never-Only-Color Rule",
+        "body": "No state may be carried by color alone. The selected row inverts its fill *and* its text; a toast variant tints its border *and* is a transient overlay that was not there a moment ago; a muted line takes the DIM attribute *and* a recessed role. This rule carries more weight here than in most systems, because the palette is genuinely out of our hands — a user on a high-contrast or remapped profile must still be able to read every state.",
+        "section": "colors"
+      },
+      {
+        "name": "The Preview Is Reversible Rule",
+        "body": "Moving the highlight through the theme list repaints the whole interface immediately, because a swatch cannot show what a palette reference will actually look like — only the real interface can. Dismissing the dialog therefore restores whatever was active when it opened. Preview applies without remembering; only a confirmed choice writes to disk.",
+        "section": "colors"
+      },
+      {
+        "name": "The Anchor Survives The Preview Rule",
+        "body": "Because previewing repaints everything, the interface itself stops being evidence of which theme is persisted. The theme list therefore marks the saved theme with a `•` in a fixed 2-cell column, in the accent. The marker tracks the persisted choice, never the highlight — it is the one fixed point the visitor can navigate back to, and it is a glyph rather than a color precisely because the colors are the thing in motion.",
+        "section": "colors"
+      },
+      {
+        "name": "The Preset Earns Its Difference Rule",
+        "body": "Two presets that resolve to visually similar slots on a common profile are one preset. Since the terminal decides the actual hues, a new preset must be justified by a distinct *slot*, not by an intended color.",
+        "section": "colors"
+      },
+      {
+        "name": "The One Cell Rule",
+        "body": "Every glyph outside the wordmark occupies exactly one cell. Hierarchy is produced by color and the DIM attribute, never by size or weight, because neither exists here. A design that needs a bigger heading needs a different idea instead.",
+        "section": "typography"
+      },
+      {
+        "name": "The Wordmark Stays Put Rule",
+        "body": "The ASCII wordmark is the single decorative element in the system and it earns its three rows only at the shell's top. It does not recur in menus, toasts, dialogs, or headers of any sub-surface.",
+        "section": "typography"
+      },
+      {
+        "name": "The Three Surfaces Rule",
+        "body": "Ground, raised, overlay. That is the entire depth vocabulary. A fourth tone means the hierarchy is wrong, not that the palette is short — and on the ANSI palette there is no fourth tone available anyway.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Flat Forever Rule",
+        "body": "No shadow, no glow, no gradient, no border to fake elevation. If a surface needs to feel closer, it moves up one tone or it gets a partial border — those are the only two moves available.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Left Rule",
+        "body": "A closed border is never the answer. A component that needs definition gets one or two edges — left for state and focus, left-and-right for transient messages — or it gets a tone step. Four-sided boxes are banned; they turn a calm console into a form.",
+        "section": "shapes"
+      }
+    ],
+    "dos": [
+      "Do construct every color with RGBA.fromIndex or a terminal default, and verify with the grep in The Terminal's Theme Wins Rule before treating a change as done.",
+      "Do check new work on at least two terminal profiles, including a light one. The palette is not yours, so a single profile proves nothing.",
+      "Do define components with partial borders or a one-step tone change per The Left Rule.",
+      "Do hold spacing to the three-step cell scale: 0.5, 1, 2.",
+      "Do carry hierarchy with color and the DIM attribute, and keep every glyph outside the wordmark at one cell.",
+      "Do pair every color-carried state with a second signal — an inverted fill, a position change, an appearing overlay — per The Never-Only-Color Rule.",
+      "Do clamp any absolutely positioned element against the live terminal width (Math.min(60, width - 6) is the established pattern) and give every fixed column a flexible, truncating sibling.",
+      "Do design keyboard-first. Arrow keys, Enter, and Escape are the primary path; mouse handlers are added after, never designed around.",
+      "Do reach for Dialog Search List before writing a new picker, and push any missing capability into it rather than around it.",
+      "Do push a new keyboard layer for anything that takes focus, so Ctrl+C unwinds one level at a time instead of quitting from inside a modal."
+    ],
+    "donts": [
+      "Don't write a hex value or a named color string. Both bypass the user's palette; the friendly name is the more dangerous of the two because it looks like a role.",
+      "Don't draw a four-sided border on anything. One or two edges, or none.",
+      "Don't introduce a fourth surface tone. Three is the entire depth vocabulary.",
+      "Don't reach for a shadow, gradient, glow, or radius. They do not exist in this medium and every attempt to fake one costs rows.",
+      "Don't spend the accent on a third resting element. Two per screen is the ceiling.",
+      "Don't let the three state colors appear in resting chrome; they belong to transient feedback only.",
+      "Don't add a preset that differs only in intended color rather than in slot.",
+      "Don't let a preview write to disk, or a dismissal leave a preview applied.",
+      "Don't put the ASCII wordmark anywhere but the shell's top row.",
+      "Don't assume the terminal is wide. Fixed widths without a clamp are a defect, not a style choice."
+    ]
+  }
+}

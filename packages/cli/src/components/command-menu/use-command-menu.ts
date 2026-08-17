@@ -1,12 +1,13 @@
+import type { ScrollBoxRenderable } from '@opentui/core'
 import { useKeyboard } from '@opentui/react'
-import type { ScrollBoxRenderable } from 'node_modules/@opentui/core/renderables/ScrollBox'
 import { type RefObject, useMemo, useRef, useState } from 'react'
 
-import type { Command } from '@/types/command'
+import { useKeyboardLayer } from '@/providers/keyboard-layer'
 
 import getFilteredCommands from './filter-commands'
+import type { Command } from './types'
 
-type UseCommandMenuProps = {
+type UseCommandMenuResult = {
   showCommandMenu: boolean
   commandQuery: string
   selectedIndex: number
@@ -16,11 +17,12 @@ type UseCommandMenuProps = {
   setSelectedIndex: (index: number) => void
 }
 
-export function UseCommandMenu(): UseCommandMenuProps {
+export function useCommandMenu(): UseCommandMenuResult {
   const [textValue, setTextValue] = useState('')
   const [selectedIndex, setSelectedIndex] = useState(0)
   const [showCommandMenu, setShowCommandMenu] = useState(false)
   const scrollRef = useRef<ScrollBoxRenderable | null>(null)
+  const { push, pop, isTopLayer } = useKeyboardLayer()
 
   const commandQuery =
     showCommandMenu && textValue.startsWith('/') ? textValue.slice(1) : ''
@@ -29,6 +31,11 @@ export function UseCommandMenu(): UseCommandMenuProps {
     () => getFilteredCommands(commandQuery),
     [commandQuery],
   )
+
+  function closeCommandMenu() {
+    setShowCommandMenu(false)
+    pop('command')
+  }
 
   function handleContentChange(text: string) {
     setTextValue(text)
@@ -41,15 +48,23 @@ export function UseCommandMenu(): UseCommandMenuProps {
 
     const prefix = text.startsWith('/') ? text.slice(1) : null
 
-    if (prefix !== null && !prefix.includes(' ')) setShowCommandMenu(true)
-    else setShowCommandMenu(false)
+    if (prefix !== null && !prefix.includes(' ')) {
+      setShowCommandMenu(true)
+
+      push('command', () => {
+        closeCommandMenu()
+        return true
+      })
+    } else setShowCommandMenu(false)
   }
 
   // Resolve command at specific index
   function resolveCommand(index: number): Command | undefined {
     const command = filteredCommands[index]
 
-    if (command) setShowCommandMenu(false)
+    if (command) {
+      closeCommandMenu()
+    }
 
     return command
   }
@@ -57,11 +72,11 @@ export function UseCommandMenu(): UseCommandMenuProps {
   // Arrow keys to move selection
 
   useKeyboard(key => {
-    if (!showCommandMenu) return
+    if (!showCommandMenu || !isTopLayer('command')) return
 
     if (key.name === 'escape') {
       key.preventDefault()
-      setShowCommandMenu(false)
+      closeCommandMenu()
     } else if (key.name === 'up') {
       key.preventDefault()
       setSelectedIndex((i: number) => {

@@ -6,7 +6,8 @@
   ],
   "scripts": {
     "dev:cli": "bun run --watch packages/cli/src/index.tsx",
-    "lint": "eslint packages/cli/src"
+    "lint": "eslint packages/cli/src",
+    "typecheck": "tsc --noEmit --project packages/cli/tsconfig.json"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

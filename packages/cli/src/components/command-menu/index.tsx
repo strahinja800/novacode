@@ -1,8 +1,8 @@
-import { TextAttributes } from '@opentui/core'
-import type { ScrollBoxRenderable } from 'node_modules/@opentui/core/renderables/ScrollBox'
+import { type ScrollBoxRenderable, TextAttributes } from '@opentui/core'
 import type { RefObject } from 'react'
 
 import { COMMANDS } from '@/constants/commands'
+import { useThemeColors } from '@/providers/theme'
 
 import getFilteredCommands from './filter-commands'
 
@@ -24,13 +24,19 @@ export default function CommandMenu({
   onExecute,
   scrollRef,
 }: CommandMenuProps) {
+  const colors = useThemeColors()
   const filtered = getFilteredCommands(query)
   const visibleHeight = Math.min(filtered.length, MAX_VISIBLE_COMMANDS)
 
   if (filtered.length === 0) {
     return (
       <box paddingX={1}>
-        <text attributes={TextAttributes.DIM}>No commands found</text>
+        <text
+          fg={colors.muted}
+          attributes={TextAttributes.DIM}
+        >
+          No commands found
+        </text>
       </box>
     )
   }
@@ -50,7 +56,7 @@ export default function CommandMenu({
             paddingX={1}
             height={1}
             overflow='hidden'
-            backgroundColor={isSelected ? '#89b4fa' : undefined}
+            backgroundColor={isSelected ? colors.selection : undefined}
             onMouseMove={() => onSelect(i)}
             onMouseDown={() => onExecute(i)}
           >
@@ -60,7 +66,7 @@ export default function CommandMenu({
             >
               <text
                 selectable={false}
-                fg={isSelected ? 'black' : 'white'}
+                fg={isSelected ? colors.inverse : colors.fg}
               >
                 /{cmd.name}
               </text>
@@ -72,7 +78,8 @@ export default function CommandMenu({
             >
               <text
                 selectable={false}
-                fg={isSelected ? 'black' : 'gray'}
+                fg={isSelected ? colors.inverse : colors.muted}
+                attributes={isSelected ? undefined : TextAttributes.DIM}
               >
                 {cmd.description}
               </text>

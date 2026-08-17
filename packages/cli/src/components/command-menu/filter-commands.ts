@@ -1,5 +1,6 @@
 import { COMMANDS } from '@/constants/commands'
-import type { Command } from '@/types/command'
+
+import type { Command } from './types'
 
 export default function getFilteredCommands(query: string): Command[] {
   if (query.length === 0) return COMMANDS

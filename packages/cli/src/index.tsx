@@ -1,50 +1,47 @@
 import { createCliRenderer } from '@opentui/core'
 import { createRoot } from '@opentui/react'
+import { createMemoryRouter, RouterProvider } from 'react-router'
 
-import { Header } from './components/header'
-import { InputBar } from './components/input-bar'
-import { DialogProvider } from './providers/dialog'
-import { KeyboardLayerProvider } from './providers/keyboard-layer'
-import { ThemeProvider, useThemeColors } from './providers/theme'
-import { ToastProvider } from './providers/toast'
+import { RootLayout } from './layout/root-layout'
+import { Home } from './screens/home'
+import { NewSession } from './screens/new-session'
+import { Session } from './screens/session'
 
-function Shell() {
-  const colors = useThemeColors()
-
-  return (
-    <box
-      alignItems='center'
-      justifyContent='center'
-      backgroundColor={colors.ground}
-      width={'100%'}
-      height={'100%'}
-      gap={2}
-    >
-      <Header />
-      <box
-        width={'100%'}
-        maxWidth={78}
-        paddingX={2}
-      >
-        <InputBar onSubmit={() => {}} />
-      </box>
-    </box>
-  )
-}
+const router = createMemoryRouter([
+  {
+    path: '/',
+    element: <RootLayout />,
+    children: [
+      {
+        index: true,
+        element: (
+          <box>
+            <Home />
+          </box>
+        ),
+      },
+      {
+        path: 'sessions/new',
+        element: (
+          <box>
+            <NewSession />
+          </box>
+        ),
+      },
+      {
+        path: 'sessions/:id',
+        element: (
+          <box>
+            <Session />
+          </box>
+        ),
+      },
+    ],
+  },
+])
 
 function App() {
-  return (
-    // Theme sits outermost because every layer below it reads colors.
-    <ThemeProvider>
-      <KeyboardLayerProvider>
-        <ToastProvider>
-          <DialogProvider>
-            <Shell />
-          </DialogProvider>
-        </ToastProvider>
-      </KeyboardLayerProvider>
-    </ThemeProvider>
-  )
+  return <RouterProvider router={router} />
 }
 
 const renderer = await createCliRenderer({

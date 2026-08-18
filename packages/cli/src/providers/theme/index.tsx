@@ -20,11 +20,6 @@ type Preferences = {
   themeName?: string
 }
 
-/**
- * Preferences are advisory. A missing file, malformed JSON, or a theme name
- * from a future version all mean the same thing: fall back to the default and
- * let the user carry on. Never let a preferences problem stop the app booting.
- */
 function readInitialTheme(): Theme {
   try {
     const raw = readFileSync(PREFERENCES_PATH, 'utf8')
@@ -42,8 +37,6 @@ function persistTheme(theme: Theme) {
   try {
     mkdirSync(dirname(PREFERENCES_PATH), { recursive: true })
 
-    // Read-modify-write so we do not clobber preferences owned by other
-    // features once this file grows past the theme.
     let preferences: Preferences = {}
     try {
       preferences = JSON.parse(
@@ -68,9 +61,7 @@ function persistTheme(theme: Theme) {
 export type ThemeContextValue = {
   theme: Theme
   colors: ThemeColors
-  /** Apply and remember. Use for a confirmed choice. */
   setTheme: (theme: Theme) => void
-  /** Apply without remembering. Use for live preview while browsing. */
   previewTheme: (theme: Theme) => void
 }
 
@@ -86,7 +77,6 @@ export function useTheme(): ThemeContextValue {
   return value
 }
 
-/** Convenience for the common case of only needing colors. */
 export function useThemeColors(): ThemeColors {
   return useTheme().colors
 }

@@ -32,9 +32,7 @@ const router = createMemoryRouter([
         path: 'sessions/:id',
         element: (
           <box>
-            <text>
-              <Session />
-            </text>
+            <Session />
           </box>
         ),
       },

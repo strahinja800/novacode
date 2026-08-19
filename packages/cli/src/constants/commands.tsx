@@ -1,33 +1,47 @@
 import type { Command, CommandContext } from '@/components/command-menu/types'
-import { ThemeDialog } from '@/components/dialogs/theme-dialog'
+import {
+  AgentsDialog,
+  ModelsDialog,
+  SessionsDialog,
+  ThemeDialog,
+} from '@/components/dialogs'
 
 export const COMMANDS: Command[] = [
   {
     name: 'new',
     description: 'Start a new conversation',
     value: '/new',
-    action: ctx =>
-      ctx.toast.show({
-        message: 'Starting a new conversation...',
-      }),
+    action: ctx => ctx.navigate('/'),
   },
   {
     name: 'agents',
     description: 'Switch between agents',
     value: '/agents',
-    action: ctx => ctx.toast.show({ message: 'Switching agents...' }),
+    action: ctx =>
+      ctx.dialog.open({
+        title: 'Select agent',
+        children: <AgentsDialog />,
+      }),
   },
   {
     name: 'models',
     description: 'Switch AI models for generation',
     value: '/models',
-    action: ctx => ctx.toast.show({ message: 'Switching models...' }),
+    action: ctx =>
+      ctx.dialog.open({
+        title: 'Select model',
+        children: <ModelsDialog />,
+      }),
   },
   {
     name: 'session',
     description: 'Browse past sessions',
     value: '/session',
-    action: ctx => ctx.toast.show({ message: 'Loading sessions...' }),
+    action: ctx =>
+      ctx.dialog.open({
+        title: 'Open session',
+        children: <SessionsDialog />,
+      }),
   },
   {
     name: 'theme',

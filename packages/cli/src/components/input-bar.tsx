@@ -1,11 +1,14 @@
+import { Mode } from '@novacode/database/enums'
 import type { TextareaRenderable } from '@opentui/core'
-import { useRenderer } from '@opentui/react'
+import { useKeyboard, useRenderer } from '@opentui/react'
 import { useCallback, useEffect, useRef } from 'react'
+import { useNavigate } from 'react-router'
 
 import { TEXTAREA_KEYBINDINGS } from '@/constants/textarea-keybinding'
 import { exitApp } from '@/lib/exit-app'
 import { useDialog } from '@/providers/dialog'
 import { useKeyboardLayer } from '@/providers/keyboard-layer'
+import { usePromptConfig } from '@/providers/prompt-config'
 import { useThemeColors } from '@/providers/theme'
 import { useToast } from '@/providers/toast'
 
@@ -23,10 +26,12 @@ export function InputBar({ onSubmit, disabled = false }: Props) {
   const textareaRef = useRef<TextareaRenderable | null>(null)
   const onSubmitRef = useRef<() => void>(() => {})
   const renderer = useRenderer()
+  const navigate = useNavigate()
   const toast = useToast()
   const dialog = useDialog()
   const colors = useThemeColors()
   const { isTopLayer, setResponder } = useKeyboardLayer()
+  const { mode, toggleMode } = usePromptConfig()
 
   const {
     showCommandMenu,
@@ -61,6 +66,7 @@ export function InputBar({ onSubmit, disabled = false }: Props) {
       if (command.action) {
         command.action({
           exit: () => exitApp(renderer),
+          navigate,
           toast,
           dialog,
         })
@@ -68,7 +74,7 @@ export function InputBar({ onSubmit, disabled = false }: Props) {
         textarea.insertText(command.value + ' ')
       }
     },
-    [renderer, toast, dialog],
+    [renderer, navigate, toast, dialog],
   )
 
   const handleCommandExecute = useCallback(
@@ -107,6 +113,18 @@ export function InputBar({ onSubmit, disabled = false }: Props) {
     handleSubmit()
   }
 
+  // Tab switches mode. Only at the base layer, so it stays available to a
+  // dialog's own filtering while one is open.
+  useKeyboard(key => {
+    if (disabled) return
+    if (!isTopLayer('base')) return
+    if (key.name !== 'tab') return
+
+    // Claimed here, or the textarea also takes it and inserts a tab character.
+    key.preventDefault()
+    toggleMode()
+  })
+
   // Register the base layer responder for ctrl+c dismissal
   useEffect(() => {
     setResponder('base', () => {
@@ -131,7 +149,7 @@ export function InputBar({ onSubmit, disabled = false }: Props) {
     >
       <box
         border={['left']}
-        borderColor={colors.accent}
+        borderColor={mode === Mode.PLAN ? colors.plan : colors.accent}
         borderStyle='rounded'
       >
         <box

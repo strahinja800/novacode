@@ -19,6 +19,7 @@
     "@novacode/shared": "workspace:*",
     "@opentui/core": "^0.2.15",
     "@opentui/react": "^0.2.15",
+    "date-fns": "^4.4.0",
     "eventsource-parser": "^4.0.0",
     "hono": "^4.13.3",
     "opentui-spinner": "^0.0.7",

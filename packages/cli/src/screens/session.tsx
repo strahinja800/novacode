@@ -82,10 +82,10 @@ export function Session() {
     // Sending follow-up messages arrives with chat streaming in a later chapter.
   }, [])
 
-  if (!id) {
-    navigate('/', { replace: true })
-    return null
-  }
+  useEffect(() => {
+    if (!id) navigate('/', { replace: true })
+  }, [id, navigate])
+  if (!id) return null
 
   return (
     <SessionShell

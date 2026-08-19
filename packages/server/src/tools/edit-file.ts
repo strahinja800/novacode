@@ -16,7 +16,7 @@ export function createEditFileTool(cwd: string) {
     }),
     execute: async ({ path, oldString, newString }) => {
       try {
-        const resolved = resolveInside(cwd, path)
+        const resolved = await resolveInside(cwd, path)
         const contents = await readFile(resolved, 'utf8')
 
         const occurrences = contents.split(oldString).length - 1

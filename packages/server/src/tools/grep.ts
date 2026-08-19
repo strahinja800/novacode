@@ -22,7 +22,7 @@ export function createGrepTool(cwd: string) {
     }),
     execute: async ({ pattern, path, include }) => {
       try {
-        const root = resolveInside(cwd, path)
+        const root = await resolveInside(cwd, path)
 
         const args = [
           'grep',

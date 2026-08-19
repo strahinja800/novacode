@@ -19,7 +19,7 @@ export function createListDirectoryTool(cwd: string) {
     }),
     execute: async ({ path }) => {
       try {
-        const resolved = resolveInside(cwd, path)
+        const resolved = await resolveInside(cwd, path)
         const entries = await readdir(resolved, { withFileTypes: true })
 
         const listed = entries

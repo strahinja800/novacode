@@ -16,7 +16,7 @@ export function createReadFileTool(cwd: string) {
     }),
     execute: async ({ path }) => {
       try {
-        const resolved = resolveInside(cwd, path)
+        const resolved = await resolveInside(cwd, path)
         const stats = await stat(resolved)
 
         if (!stats.isFile()) {

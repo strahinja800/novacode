@@ -16,7 +16,7 @@ export function createWriteFileTool(cwd: string) {
     }),
     execute: async ({ path, content }) => {
       try {
-        const resolved = resolveInside(cwd, path)
+        const resolved = await resolveInside(cwd, path)
 
         await mkdir(dirname(resolved), { recursive: true })
         await writeFile(resolved, content, 'utf8')

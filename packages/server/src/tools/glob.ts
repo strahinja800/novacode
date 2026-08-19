@@ -18,7 +18,7 @@ export function createGlobTool(cwd: string) {
     }),
     execute: async ({ pattern, path }) => {
       try {
-        const root = resolveInside(cwd, path)
+        const root = await resolveInside(cwd, path)
         const glob = new Bun.Glob(pattern)
 
         const files: string[] = []

@@ -15,6 +15,8 @@ import { useToast } from '@/providers/toast'
 import CommandMenu from './command-menu'
 import type { Command } from './command-menu/types'
 import { useCommandMenu } from './command-menu/use-command-menu'
+import FileMentionMenu from './file-mention-menu'
+import { useFileMention } from './file-mention-menu/use-file-mention'
 import { StatusBar } from './status-bar'
 
 type Props = {
@@ -42,6 +44,16 @@ export function InputBar({ onSubmit, disabled = false }: Props) {
     resolveCommand,
     setSelectedIndex,
   } = useCommandMenu()
+
+  const {
+    showMentionMenu,
+    candidates: mentionCandidates,
+    selectedIndex: mentionSelectedIndex,
+    scrollRef: mentionScrollRef,
+    setSelectedIndex: setMentionSelectedIndex,
+    syncMentionMenu,
+    executeMention,
+  } = useFileMention({ textareaRef, disabled })
 
   const handleSubmit = useCallback(() => {
     if (disabled) return
@@ -89,7 +101,8 @@ export function InputBar({ onSubmit, disabled = false }: Props) {
     if (!textarea) return
 
     handleContentChange(textarea.plainText)
-  }, [handleContentChange])
+    syncMentionMenu()
+  }, [handleContentChange, syncMentionMenu])
 
   // Wire up textarea submit handler
   useEffect(() => {
@@ -103,6 +116,11 @@ export function InputBar({ onSubmit, disabled = false }: Props) {
 
   onSubmitRef.current = () => {
     if (disabled) return
+
+    if (showMentionMenu) {
+      executeMention(mentionSelectedIndex)
+      return
+    }
 
     if (showCommandMenu) {
       const command = resolveCommand(selectedIndex)
@@ -179,10 +197,33 @@ export function InputBar({ onSubmit, disabled = false }: Props) {
               />
             </box>
           )}
+          {!showCommandMenu && showMentionMenu && (
+            <box
+              position='absolute'
+              bottom={'100%'}
+              left={0}
+              width={'100%'}
+              backgroundColor={colors.overlay}
+              zIndex={10}
+            >
+              <FileMentionMenu
+                candidates={mentionCandidates}
+                selectedIndex={mentionSelectedIndex}
+                onSelect={setMentionSelectedIndex}
+                onExecute={executeMention}
+                scrollRef={mentionScrollRef}
+              />
+            </box>
+          )}
           <textarea
             ref={textareaRef}
-            focused={(!disabled && isTopLayer('base')) || isTopLayer('command')}
+            focused={
+              (!disabled && isTopLayer('base')) ||
+              isTopLayer('command') ||
+              isTopLayer('mention')
+            }
             onContentChange={handleTextareaContentChange}
+            onCursorChange={syncMentionMenu}
             keyBindings={TEXTAREA_KEYBINDINGS}
             placeholder={`Ask anything... 'Fix a bug in database'`}
           />

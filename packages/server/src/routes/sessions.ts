@@ -2,6 +2,7 @@ import { zValidator } from '@hono/zod-validator'
 import { database } from '@novacode/database/client'
 import { MessageStatus, Mode, Role } from '@novacode/database/enums'
 import { findSupportedChatModel } from '@novacode/shared'
+import * as Sentry from '@sentry/hono/bun'
 import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
 import { z } from 'zod'
@@ -21,17 +22,14 @@ const createSessionSchema = z.object({
     .optional(),
 })
 
-/**
- * Rejecting an unsupported model here, rather than letting the AI SDK fail on
- * it later, is the reason the model list lives in the shared package at all.
- */
 const createSessionValidator = zValidator(
   'json',
   createSessionSchema,
-  (result, _c) => {
+  (result, c) => {
     if (!result.success) {
-      throw new HTTPException(400, {
-        message: result.error.issues.map(issue => issue.message).join(', '),
+      Sentry.logger.warn('Session creation validation failed', {
+        path: c.req.path,
+        issues: result.error.issues.length,
       })
     }
   },
@@ -44,32 +42,39 @@ const app = new Hono()
       select: { id: true, title: true, createdAt: true },
     })
 
+    Sentry.logger.info('Fetched sessions', {
+      count: sessions.length,
+    })
+
     return c.json(sessions)
   })
   .get('/:id', async c => {
+    const id = c.req.param('id')
+
     const session = await database.session.findUnique({
-      where: { id: c.req.param('id') },
+      where: { id },
       include: {
         messages: { orderBy: { createdAt: 'asc' } },
       },
     })
 
     if (!session) {
+      Sentry.logger.warn('Session not found', {
+        sessionId: id,
+       })
+
       throw new HTTPException(404, { message: 'Session not found' })
     }
 
     return c.json(session)
   })
   .post('/', createSessionValidator, async c => {
-    // `model` is deliberately not a Session column — it lives on each Message,
-    // so the visitor can switch models partway through a conversation. Keep it
-    // out of the session payload.
     const { initialMessage, model, ...data } = c.req.valid('json')
 
     const session = await database.session.create({
       data: {
         ...data,
-        // Replaced by the real user id once auth lands in a later chapter.
+
         userId: 'mock_user',
         ...(initialMessage && {
           messages: {
@@ -81,8 +86,7 @@ const app = new Hono()
           },
         }),
       },
-      // The client navigates straight to the session screen and renders these,
-      // so returning them here saves an immediate second round trip.
+
       include: { messages: true },
     })
 

@@ -1,5 +1,5 @@
-import { MessageStatus, Mode, Role } from '@novacode/database/enums'
-import { DEFAULT_CHAT_MODEL_ID } from '@novacode/shared'
+import { MessageStatus, Role } from '@novacode/database/enums'
+import { messagePartsSchema } from '@novacode/shared'
 import { useKeyboard } from '@opentui/react'
 import type { InferResponseType } from 'hono/client'
 import prettyMilliseconds from 'pretty-ms'
@@ -8,11 +8,12 @@ import { useLocation, useNavigate, useParams } from 'react-router'
 
 import { BotMessage, ErrorMessage, UserMessage } from '@/components/messages'
 import { SessionShell } from '@/components/session-shell'
-import type { Message } from '@/hooks/use-chat'
+import type { ClientMessagePart, Message } from '@/hooks/use-chat'
 import { useChat } from '@/hooks/use-chat'
 import { apiClient } from '@/lib/api-client'
 import { getErrorMessage } from '@/lib/http-errors'
 import { useKeyboardLayer } from '@/providers/keyboard-layer'
+import { usePromptConfig } from '@/providers/prompt-config'
 import { useToast } from '@/providers/toast'
 
 /**
@@ -30,6 +31,28 @@ type SessionData = InferResponseType<
  * The database keeps a message as one content string with a status; the screen
  * wants parts to render, a humanized duration, and a plain `interrupted` flag.
  */
+/**
+ * Read back what the server stored in the `Json` column.
+ *
+ * Parsed rather than cast: the column predates the schema and could hold rows
+ * written before a part type existed. A row that fails becomes plain text,
+ * which is worse than the real thing but not a crash.
+ */
+function toClientParts(
+  storedParts: unknown,
+  content: string,
+): ClientMessagePart[] {
+  const parsed = messagePartsSchema.safeParse(storedParts)
+
+  if (!parsed.success) return [{ type: 'text', text: content }]
+
+  return parsed.data.map(part =>
+    part.type === 'tool-call'
+      ? { ...part, status: 'done' as const }
+      : part,
+  )
+}
+
 function mapDatabaseMessages(messages: SessionData['messages']): Message[] {
   return messages.map(message => {
     if (message.role === Role.ERROR) {
@@ -54,7 +77,7 @@ function mapDatabaseMessages(messages: SessionData['messages']): Message[] {
       id: message.id,
       role: 'assistant',
       content: message.content,
-      parts: [{ type: 'text', text: message.content }],
+      parts: toClientParts(message.parts, message.content),
       mode: message.mode,
       model: message.model,
       interrupted: message.status === MessageStatus.INTERRUPTED,
@@ -67,7 +90,12 @@ function mapDatabaseMessages(messages: SessionData['messages']): Message[] {
 
 function ChatMessage({ message }: { message: Message }) {
   if (message.role === 'user') {
-    return <UserMessage message={message.content} />
+    return (
+      <UserMessage
+        message={message.content}
+        mode={message.mode}
+      />
+    )
   }
 
   if (message.role === 'error') {
@@ -93,6 +121,7 @@ function ChatMessage({ message }: { message: Message }) {
  */
 function SessionChat({ session }: { session: SessionData }) {
   const { isTopLayer } = useKeyboardLayer()
+  const { mode, model } = usePromptConfig()
 
   const initialMessages = useMemo(
     () => mapDatabaseMessages(session.messages),
@@ -109,13 +138,9 @@ function SessionChat({ session }: { session: SessionData }) {
 
   const handleSubmit = useCallback(
     (userText: string) => {
-      void submit({
-        userText,
-        mode: Mode.BUILD,
-        model: DEFAULT_CHAT_MODEL_ID,
-      })
+      void submit({ userText, mode, model })
     },
-    [submit],
+    [submit, mode, model],
   )
 
   // Only at the base layer: with a dialog open, escape belongs to the dialog.

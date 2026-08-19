@@ -1,5 +1,9 @@
 import type { Mode } from '@novacode/database/enums'
-import { type ChatStreamEvent, chatStreamEventSchema } from '@novacode/shared'
+import {
+  type ChatStreamEvent,
+  chatStreamEventSchema,
+  type ToolCallArguments,
+} from '@novacode/shared'
 import { EventSourceParserStream } from 'eventsource-parser/stream'
 import prettyMilliseconds from 'pretty-ms'
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -8,16 +12,26 @@ import { apiClient } from '@/lib/api-client'
 import { getErrorMessage } from '@/lib/http-errors'
 
 /**
- * One rendered piece of an assistant reply.
+ * A tool call as the terminal shows it.
  *
- * A single-member union today, which looks like overkill — but tool calls and
- * reasoning become their own part types in later chapters, and every consumer
- * already switches on `type` rather than assuming text.
+ * `status` is the one field the server has no use for: it persists `result`
+ * once the tool returns, but the visitor needs to see that something is running
+ * while it does.
  */
-export type ClientMessagePart = {
-  type: 'text'
-  text: string
+export type ClientToolCallPart = {
+  type: 'tool-call'
+  id: string
+  name: string
+  arguments: ToolCallArguments
+  result?: string
+  status: 'calling' | 'done'
 }
+
+/** One rendered piece of an assistant reply. */
+export type ClientMessagePart =
+  | { type: 'reasoning'; text: string }
+  | ClientToolCallPart
+  | { type: 'text'; text: string }
 
 /**
  * A message as the screen needs it, which is not how the database stores it.
@@ -246,13 +260,50 @@ export function useChat({ sessionId, initialMessages }: UseChatParams) {
           break
         }
 
+        // Appended into the previous part rather than pushed as a new one: a
+        // part per delta would be a part per few characters.
         if (event.type === 'text-delta') {
-          // Appended into the previous part rather than pushed as a new one:
-          // a part per delta would be a part per few characters.
           const lastPart = parts.at(-1)
 
           if (lastPart?.type === 'text') lastPart.text += event.text
           else parts.push({ type: 'text', text: event.text })
+
+          emitParts(activeStream.requestId, parts)
+          continue
+        }
+
+        if (event.type === 'reasoning-delta') {
+          const lastPart = parts.at(-1)
+
+          if (lastPart?.type === 'reasoning') lastPart.text += event.text
+          else parts.push({ type: 'reasoning', text: event.text })
+
+          emitParts(activeStream.requestId, parts)
+          continue
+        }
+
+        if (event.type === 'tool-call') {
+          parts.push({
+            type: 'tool-call',
+            id: event.toolCallId,
+            name: event.toolName,
+            arguments: event.arguments,
+            status: 'calling',
+          })
+
+          emitParts(activeStream.requestId, parts)
+          continue
+        }
+
+        if (event.type === 'tool-result') {
+          const toolCallPart = parts.find(
+            part => part.type === 'tool-call' && part.id === event.toolCallId,
+          )
+
+          if (toolCallPart?.type === 'tool-call') {
+            toolCallPart.result = event.result
+            toolCallPart.status = 'done'
+          }
 
           emitParts(activeStream.requestId, parts)
           continue
@@ -282,9 +333,6 @@ export function useChat({ sessionId, initialMessages }: UseChatParams) {
           appendErrorMessage(event.message)
           break
         }
-
-        // `reasoning-delta`, `tool-call` and `tool-result` are part of the wire
-        // protocol already but have nothing to render until a later chapter.
       }
     },
     [isActiveRequest, appendErrorMessage, emitParts, clearStream],

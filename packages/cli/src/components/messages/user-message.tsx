@@ -1,10 +1,14 @@
+import { Mode } from '@novacode/database/enums'
+
 import { useTheme } from '@/providers/theme'
 
 type Props = {
   message: string
+  /** The mode this was sent in, which may not be the mode selected now. */
+  mode?: Mode
 }
 
-export function UserMessage({ message }: Props) {
+export function UserMessage({ message, mode = Mode.BUILD }: Props) {
   const { colors } = useTheme()
 
   return (
@@ -14,7 +18,7 @@ export function UserMessage({ message }: Props) {
     >
       <box
         border={['left']}
-        borderColor={colors.accent}
+        borderColor={mode === Mode.PLAN ? colors.plan : colors.accent}
         width={'100%'}
       >
         <box

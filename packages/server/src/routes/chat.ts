@@ -1,14 +1,31 @@
 import { zValidator } from '@hono/zod-validator'
+import type { Prisma } from '@novacode/database'
 import { database } from '@novacode/database/client'
 import { MessageStatus, Mode, Role } from '@novacode/database/enums'
-import type { ChatStreamEvent } from '@novacode/shared'
-import { streamText } from 'ai'
+import {
+  type ChatStreamEvent,
+  type MessagePart,
+  messagePartsSchema,
+  toolCallArgumentsSchema,
+} from '@novacode/shared'
+import { stepCountIs, streamText } from 'ai'
 import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
 import { type SSEStreamingApi, streamSSE } from 'hono/streaming'
 import { z } from 'zod'
 
 import { isSupportedChatModel, resolveChatModel } from '../lib/models'
+import { buildSystemPrompt } from '../system-prompt'
+import { createTools } from '../tools'
+
+/**
+ * How many model turns one request may take.
+ *
+ * Each tool call costs a step, so a real task — glob, read a few files, edit,
+ * run the tests — burns through the SDK's default of 20 quickly. Fifty is a
+ * ceiling against a loop, not a budget the model is meant to spend.
+ */
+const MAX_STEPS = 50
 
 const submitSchema = z.object({
   content: z.string().min(1),
@@ -91,7 +108,30 @@ type StreamParams = {
   model: string
   history: HistoryMessage[]
   mode: Mode
+  /** The directory the session was started in. Tools are scoped to it. */
+  cwd: string | null
   abortController: AbortController
+}
+
+/** The prose half of a reply, which is what later turns are given as context. */
+function partsToText(parts: MessagePart[]): string {
+  return parts
+    .filter(part => part.type === 'text')
+    .map(part => part.text)
+    .join('')
+}
+
+/**
+ * Check the parts against the shared schema on the way into the database.
+ *
+ * `Message.parts` is a `Json` column, so Postgres will accept anything. The
+ * schema is what makes the column trustworthy enough for the CLI to render
+ * without defensive checks at every level.
+ */
+function toStoredParts(parts: MessagePart[]): Prisma.InputJsonValue | undefined {
+  if (parts.length === 0) return undefined
+
+  return messagePartsSchema.parse(parts) as Prisma.InputJsonValue
 }
 
 /**
@@ -103,21 +143,22 @@ type StreamParams = {
  * history comes from.
  */
 async function streamAIResponse(stream: SSEStreamingApi, params: StreamParams) {
-  const { sessionId, model, history, mode, abortController } = params
+  const { sessionId, model, history, mode, cwd, abortController } = params
 
   const startedAt = Date.now()
-  const { model: languageModel } = resolveChatModel(model)
+  const { model: languageModel, providerOptions } = resolveChatModel(model)
 
-  let fullText = ''
+  // Ordered rather than a flat string: a turn interleaves thinking, tool calls
+  // and prose, and the terminal draws each of them differently.
+  const parts: MessagePart[] = []
   let hasPersistedInterruption = false
 
   const isAborted = () => stream.aborted || abortController.signal.aborted
 
   const persistInterruptedMessage = async () => {
-    // Nothing was written before the visitor hit escape, so there is nothing
-    // worth keeping. The guard also makes this safe to call from both the
-    // loop's exit and the catch block.
-    if (fullText.length === 0 || hasPersistedInterruption) return
+    // Nothing had been produced before the visitor hit escape. The guard also
+    // makes this safe to call from both the loop's exit and the catch block.
+    if (parts.length === 0 || hasPersistedInterruption) return
 
     hasPersistedInterruption = true
 
@@ -127,7 +168,8 @@ async function streamAIResponse(stream: SSEStreamingApi, params: StreamParams) {
         role: Role.ASSISTANT,
         status: MessageStatus.INTERRUPTED,
         model,
-        content: fullText,
+        content: partsToText(parts),
+        parts: toStoredParts(parts),
         mode,
         duration: Date.now() - startedAt,
       },
@@ -138,31 +180,95 @@ async function streamAIResponse(stream: SSEStreamingApi, params: StreamParams) {
     await stream.writeSSE({ event: event.type, data: JSON.stringify(event) })
   }
 
+  const tools = cwd ? createTools({ cwd, mode }) : undefined
+
   try {
     const result = streamText({
       model: languageModel,
+      system: buildSystemPrompt({ cwd, mode }),
       messages: history,
+      providerOptions,
+      tools,
+      // Without this the turn stops after the first tool result, before the
+      // model has had a chance to say anything about what it found.
+      stopWhen: tools ? stepCountIs(MAX_STEPS) : undefined,
       abortSignal: abortController.signal,
     })
 
-    for await (const part of result.fullStream) {
+    for await (const streamPart of result.fullStream) {
       if (isAborted()) break
 
-      if (part.type === 'text-delta') {
-        fullText += part.text
-        await emit({ type: 'text-delta', text: part.text })
+      // Deltas are merged into the part they continue rather than pushed as
+      // new ones. A part per delta would mean thousands of them per message,
+      // and a "Thinking" heading above every few characters.
+      if (streamPart.type === 'text-delta') {
+        const lastPart = parts.at(-1)
+
+        if (lastPart?.type === 'text') lastPart.text += streamPart.text
+        else parts.push({ type: 'text', text: streamPart.text })
+
+        await emit({ type: 'text-delta', text: streamPart.text })
         continue
       }
 
-      if (part.type === 'reasoning-delta') {
-        await emit({ type: 'reasoning-delta', text: part.text })
+      if (streamPart.type === 'reasoning-delta') {
+        const lastPart = parts.at(-1)
+
+        if (lastPart?.type === 'reasoning') lastPart.text += streamPart.text
+        else parts.push({ type: 'reasoning', text: streamPart.text })
+
+        await emit({ type: 'reasoning-delta', text: streamPart.text })
         continue
       }
 
-      if (part.type === 'error') {
-        throw part.error instanceof Error
-          ? part.error
-          : new Error(String(part.error))
+      if (streamPart.type === 'tool-call') {
+        // The model chose these arguments, so they are only as well-formed as
+        // it decided to make them.
+        const args = toolCallArgumentsSchema.safeParse(streamPart.input)
+        const toolArguments = args.success ? args.data : {}
+
+        parts.push({
+          type: 'tool-call',
+          id: streamPart.toolCallId,
+          name: streamPart.toolName,
+          arguments: toolArguments,
+        })
+
+        await emit({
+          type: 'tool-call',
+          toolCallId: streamPart.toolCallId,
+          toolName: streamPart.toolName,
+          arguments: toolArguments,
+        })
+        continue
+      }
+
+      if (streamPart.type === 'tool-result') {
+        const result =
+          typeof streamPart.output === 'string'
+            ? streamPart.output
+            : JSON.stringify(streamPart.output)
+
+        const toolCallPart = parts.find(
+          candidate =>
+            candidate.type === 'tool-call' &&
+            candidate.id === streamPart.toolCallId,
+        )
+
+        if (toolCallPart?.type === 'tool-call') toolCallPart.result = result
+
+        await emit({
+          type: 'tool-result',
+          toolCallId: streamPart.toolCallId,
+          result,
+        })
+        continue
+      }
+
+      if (streamPart.type === 'error') {
+        throw streamPart.error instanceof Error
+          ? streamPart.error
+          : new Error(String(streamPart.error))
       }
     }
 
@@ -179,7 +285,8 @@ async function streamAIResponse(stream: SSEStreamingApi, params: StreamParams) {
         role: Role.ASSISTANT,
         status: MessageStatus.COMPLETE,
         model,
-        content: fullText,
+        content: partsToText(parts),
+        parts: toStoredParts(parts),
         mode,
         duration: durationMs,
       },
@@ -288,6 +395,7 @@ const app = new Hono()
             model: resumableMessage.model,
             history,
             mode: resumableMessage.mode,
+            cwd: session.path,
             abortController,
           })
         } finally {
@@ -335,6 +443,7 @@ const app = new Hono()
           model: data.model,
           history,
           mode: data.mode,
+          cwd: session.path,
           abortController,
         })
       },

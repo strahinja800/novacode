@@ -25,6 +25,9 @@ export type ThemeRole =
   // Plan mode. A state, not an accent: fixed across presets so it never
   // collides with whichever hue a preset chose to carry `accent`.
   | 'plan'
+  // The model's own working-out: reasoning and tool calls. Quieter than body
+  // text, because it is what happened on the way to the answer, not the answer.
+  | 'thinking'
 
 export type ThemeColors = Record<ThemeRole, RGBA>
 

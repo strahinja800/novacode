@@ -1,5 +1,6 @@
 import { anthropic } from '@ai-sdk/anthropic'
 import { google } from '@ai-sdk/google'
+import type { ProviderOptions } from '@ai-sdk/provider-utils'
 import {
   findSupportedChatModel,
   type SupportedChatModel,
@@ -29,6 +30,21 @@ type GoogleModelId = Extract<SupportedChatModel, { provider: 'google' }>['id']
  */
 export type ResolvedModel = {
   model: LanguageModel
+  providerOptions?: ProviderOptions
+}
+
+/**
+ * Reasoning is off unless the provider is told to send it.
+ *
+ * Only `includeThoughts` is set. Google also takes `thinkingBudget` and
+ * `thinkingLevel`, but which of the two a given Gemini accepts varies by
+ * generation, and the wrong one is a 400 rather than a warning — the model's
+ * own default is the safe choice.
+ */
+const GOOGLE_PROVIDER_OPTIONS: ProviderOptions = {
+  google: {
+    thinkingConfig: { includeThoughts: true },
+  },
 }
 
 /**
@@ -48,7 +64,7 @@ function resolveAnthropicModel(modelId: AnthropicModelId): ResolvedModel {
 }
 
 function resolveGoogleModel(modelId: GoogleModelId): ResolvedModel {
-  return { model: google(modelId) }
+  return { model: google(modelId), providerOptions: GOOGLE_PROVIDER_OPTIONS }
 }
 
 /**

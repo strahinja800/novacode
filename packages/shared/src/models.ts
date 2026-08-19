@@ -29,6 +29,10 @@ export type SupportedChatModelDefinition = {
  * provider-agnostic and adding one is a single entry — but an entry needs a
  * verified id and verified pricing, and inventing either would put wrong
  * numbers straight into the billing math.
+ *
+ * Several Google models are listed for a reason beyond taste: the free tier
+ * caps requests per day *per model*, and one agentic turn spends a request per
+ * step. Switching model is how you get a fresh budget.
  */
 export const SUPPORTED_CHAT_MODELS = [
   {
@@ -43,6 +47,13 @@ export const SUPPORTED_CHAT_MODELS = [
     label: 'Gemini 3.5 Flash Lite',
     provider: 'google',
     pricing: { inputPerMillion: 0.3, outputPerMillion: 2.5 },
+  },
+  {
+    id: 'gemini-3.6-flash',
+    label: 'Gemini 3.6 Flash',
+    provider: 'google',
+    // Same list rate as 3.7 Flash, and the same doubling on 2027-01-01.
+    pricing: { inputPerMillion: 0.75, outputPerMillion: 3.75 },
   },
   {
     id: 'claude-opus-5',

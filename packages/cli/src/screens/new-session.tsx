@@ -1,6 +1,6 @@
 import process from 'node:process'
 
-import { DEFAULT_CHAT_MODEL_ID } from '@novacode/shared'
+import { Mode } from '@novacode/database/enums'
 import { useEffect, useMemo, useRef } from 'react'
 import { useLocation, useNavigate } from 'react-router'
 import { z } from 'zod'
@@ -13,6 +13,8 @@ import { useToast } from '@/providers/toast'
 
 const newSessionStateSchema = z.object({
   message: z.string().min(1),
+  mode: z.enum(Mode),
+  model: z.string().min(1),
 })
 
 /**
@@ -54,11 +56,11 @@ export function NewSession() {
           json: {
             title: state.message.slice(0, 100),
             path: process.cwd(),
-            model: DEFAULT_CHAT_MODEL_ID,
+            model: state.model,
             initialMessage: {
               role: 'USER',
               content: state.message,
-              mode: 'BUILD',
+              mode: state.mode,
             },
           },
         })
@@ -108,7 +110,10 @@ export function NewSession() {
       inputDisabled
       loading
     >
-      <UserMessage message={state.message} />
+      <UserMessage
+        message={state.message}
+        mode={state.mode}
+      />
     </SessionShell>
   )
 }

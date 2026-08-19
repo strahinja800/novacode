@@ -63,6 +63,10 @@ function buildColors({ accent, selection }: AccentSlots): ThemeColors {
     // Not derived from `accent`: build mode already wears the accent, so plan
     // mode has to read as different in every preset, including the cyan one.
     plan: RGBA.fromIndex(ANSI.brightBlue),
+
+    // Bright black is the one slot every terminal renders as "present but
+    // recessive", which is exactly the weight the model's working-out wants.
+    thinking: RGBA.fromIndex(ANSI.brightBlack),
   }
 }
 

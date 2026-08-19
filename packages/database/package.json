@@ -8,6 +8,9 @@
     "./client": "./src/client.ts",
     "./enums": "./src/enums.ts"
   },
+  "scripts": {
+    "generate": "prisma generate"
+  },
   "dependencies": {
     "@prisma/adapter-pg": "^7.9.1",
     "@prisma/client": "^7.9.1",

@@ -22,6 +22,9 @@ export type ThemeRole =
   | 'success'
   | 'error'
   | 'info'
+  // Plan mode. A state, not an accent: fixed across presets so it never
+  // collides with whichever hue a preset chose to carry `accent`.
+  | 'plan'
 
 export type ThemeColors = Record<ThemeRole, RGBA>
 

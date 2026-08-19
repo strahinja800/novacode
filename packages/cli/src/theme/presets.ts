@@ -59,6 +59,10 @@ function buildColors({ accent, selection }: AccentSlots): ThemeColors {
     success: RGBA.fromIndex(ANSI.green),
     error: RGBA.fromIndex(ANSI.red),
     info: RGBA.fromIndex(ANSI.cyan),
+
+    // Not derived from `accent`: build mode already wears the accent, so plan
+    // mode has to read as different in every preset, including the cyan one.
+    plan: RGBA.fromIndex(ANSI.brightBlue),
   }
 }
 

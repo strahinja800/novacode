@@ -1,11 +1,18 @@
+import { MessageStatus, Mode, Role } from '@novacode/database/enums'
+import { DEFAULT_CHAT_MODEL_ID } from '@novacode/shared'
+import { useKeyboard } from '@opentui/react'
 import type { InferResponseType } from 'hono/client'
+import prettyMilliseconds from 'pretty-ms'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router'
 
 import { BotMessage, ErrorMessage, UserMessage } from '@/components/messages'
 import { SessionShell } from '@/components/session-shell'
+import type { Message } from '@/hooks/use-chat'
+import { useChat } from '@/hooks/use-chat'
 import { apiClient } from '@/lib/api-client'
 import { getErrorMessage } from '@/lib/http-errors'
+import { useKeyboardLayer } from '@/providers/keyboard-layer'
 import { useToast } from '@/providers/toast'
 
 /**
@@ -16,6 +23,140 @@ type SessionData = InferResponseType<
   (typeof apiClient.sessions)[':id']['$get'],
   200
 >
+
+/**
+ * Translate stored rows into what the chat hook and renderer expect.
+ *
+ * The database keeps a message as one content string with a status; the screen
+ * wants parts to render, a humanized duration, and a plain `interrupted` flag.
+ */
+function mapDatabaseMessages(messages: SessionData['messages']): Message[] {
+  return messages.map(message => {
+    if (message.role === Role.ERROR) {
+      return {
+        id: message.id,
+        role: 'error',
+        content: message.content,
+      }
+    }
+
+    if (message.role === Role.USER) {
+      return {
+        id: message.id,
+        role: 'user',
+        content: message.content,
+        mode: message.mode,
+        model: message.model,
+      }
+    }
+
+    return {
+      id: message.id,
+      role: 'assistant',
+      content: message.content,
+      parts: [{ type: 'text', text: message.content }],
+      mode: message.mode,
+      model: message.model,
+      interrupted: message.status === MessageStatus.INTERRUPTED,
+      ...(message.duration !== null && {
+        duration: prettyMilliseconds(message.duration),
+      }),
+    }
+  })
+}
+
+function ChatMessage({ message }: { message: Message }) {
+  if (message.role === 'user') {
+    return <UserMessage message={message.content} />
+  }
+
+  if (message.role === 'error') {
+    return <ErrorMessage message={message.content} />
+  }
+
+  return (
+    <BotMessage
+      parts={message.parts}
+      model={message.model}
+      mode={message.mode}
+      duration={message.duration}
+      interrupted={message.interrupted}
+    />
+  )
+}
+
+/**
+ * The session once its data is in hand.
+ *
+ * Split out from `Session` so the chat hook mounts with the real initial
+ * messages instead of an empty list it would have to reconcile later.
+ */
+function SessionChat({ session }: { session: SessionData }) {
+  const { isTopLayer } = useKeyboardLayer()
+
+  const initialMessages = useMemo(
+    () => mapDatabaseMessages(session.messages),
+    [session.messages],
+  )
+
+  const { messages, streaming, submit, abort, interrupt } = useChat({
+    sessionId: session.id,
+    initialMessages,
+  })
+
+  // Leaving the session should not leave a reply streaming into nothing.
+  useEffect(() => abort, [abort])
+
+  const handleSubmit = useCallback(
+    (userText: string) => {
+      void submit({
+        userText,
+        mode: Mode.BUILD,
+        model: DEFAULT_CHAT_MODEL_ID,
+      })
+    },
+    [submit],
+  )
+
+  // Only at the base layer: with a dialog open, escape belongs to the dialog.
+  useKeyboard(key => {
+    if (key.name !== 'escape') return
+    if (!isTopLayer('base')) return
+    if (streaming.status !== 'streaming') return
+
+    interrupt()
+  })
+
+  const isStreaming = streaming.status === 'streaming'
+
+  return (
+    <SessionShell
+      onSubmit={handleSubmit}
+      loading={isStreaming}
+      interruptible={isStreaming}
+    >
+      {messages.map(message => (
+        <ChatMessage
+          key={message.id}
+          message={message}
+        />
+      ))}
+
+      {/*
+        The live reply. It disappears the moment the `done` event lands, by
+        which point the finished message is already in `messages`.
+      */}
+      {isStreaming && streaming.parts.length > 0 ? (
+        <BotMessage
+          parts={streaming.parts}
+          model={streaming.model}
+          mode={streaming.mode}
+          streaming
+        />
+      ) : null}
+    </SessionShell>
+  )
+}
 
 export function Session() {
   const { id } = useParams<{ id: string }>()
@@ -78,36 +219,30 @@ export function Session() {
     }
   }, [id, prefetched, toast])
 
-  const handleSubmit = useCallback(() => {
-    // Sending follow-up messages arrives with chat streaming in a later chapter.
-  }, [])
-
   useEffect(() => {
     if (!id) navigate('/', { replace: true })
   }, [id, navigate])
+
   if (!id) return null
 
+  if (!session) {
+    return (
+      <SessionShell
+        onSubmit={() => {}}
+        inputDisabled
+        loading={loading}
+      >
+        {error ? <ErrorMessage message={error} /> : null}
+      </SessionShell>
+    )
+  }
+
+  // Keyed so switching sessions rebuilds the chat rather than carrying one
+  // session's streaming state into another.
   return (
-    <SessionShell
-      onSubmit={handleSubmit}
-      inputDisabled
-      loading={loading}
-    >
-      {error ? <ErrorMessage message={error} /> : null}
-      {session?.messages.map(message =>
-        message.role === 'USER' ? (
-          <UserMessage
-            key={message.id}
-            message={message.content}
-          />
-        ) : (
-          <BotMessage
-            key={message.id}
-            content={message.content}
-            model={message.model}
-          />
-        ),
-      )}
-    </SessionShell>
+    <SessionChat
+      key={session.id}
+      session={session}
+    />
   )
 }

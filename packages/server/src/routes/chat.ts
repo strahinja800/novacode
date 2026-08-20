@@ -15,6 +15,7 @@ import { type SSEStreamingApi, streamSSE } from 'hono/streaming'
 import { z } from 'zod'
 
 import { isSupportedChatModel, resolveChatModel } from '../lib/models'
+import type { AuthenticatedEnv } from '../middleware/require-auth'
 import { buildSystemPrompt } from '../system-prompt'
 import { createTools } from '../tools'
 
@@ -335,9 +336,9 @@ async function reportStreamError(error: Error, stream: SSEStreamingApi) {
   await stream.writeSSE({ event: event.type, data: JSON.stringify(event) })
 }
 
-async function loadSessionWithMessages(sessionId: string) {
-  const session = await database.session.findUnique({
-    where: { id: sessionId },
+async function loadSessionWithMessages(sessionId: string, userId: string) {
+  const session = await database.session.findFirst({
+    where: { id: sessionId, userId },
     include: { messages: { orderBy: { createdAt: 'asc' } } },
   })
 
@@ -348,7 +349,7 @@ async function loadSessionWithMessages(sessionId: string) {
   return session
 }
 
-const app = new Hono()
+const app = new Hono<AuthenticatedEnv>()
   /**
    * Answer a message that was stored but never replied to.
    *
@@ -358,7 +359,7 @@ const app = new Hono()
    */
   .post('/:sessionId/resume', async c => {
     const sessionId = c.req.param('sessionId')
-    const session = await loadSessionWithMessages(sessionId)
+    const session = await loadSessionWithMessages(sessionId, c.get('userId'))
 
     const resumableMessage = getResumableUserMessage(session.messages)
 
@@ -410,7 +411,7 @@ const app = new Hono()
   })
   .post('/:sessionId', submitValidator, async c => {
     const sessionId = c.req.param('sessionId')
-    const session = await loadSessionWithMessages(sessionId)
+    const session = await loadSessionWithMessages(sessionId, c.get('userId'))
 
     const data = c.req.valid('json')
 

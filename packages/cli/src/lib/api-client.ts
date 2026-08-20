@@ -1,13 +1,24 @@
 import type { AppType } from '@novacode/server'
 import { hc } from 'hono/client'
 
+import { clearAuth, getAuth } from './auth'
+
 const API_URL = process.env.API_URL ?? 'http://localhost:3000'
 
-/**
- * Typed client for our own server.
- *
- * `AppType` comes from the server package as a *type only*, which is why the
- * server sits in devDependencies — the types are erased at build time and no
- * server code ends up in the CLI bundle.
- */
-export const apiClient = hc<AppType>(API_URL)
+export const apiClient = hc<AppType>(API_URL, {
+  fetch: async (
+    input: Parameters<typeof fetch>[0],
+    init?: Parameters<typeof fetch>[1],
+  ) => {
+    const headers = new Headers(init?.headers)
+    const auth = getAuth()
+
+    if (auth) headers.set('authorization', `Bearer ${auth.token}`)
+
+    const response = await fetch(input, { ...init, headers })
+
+    if (response.status === 401) clearAuth()
+
+    return response
+  },
+})

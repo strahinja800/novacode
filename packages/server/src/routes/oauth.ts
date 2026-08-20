@@ -7,6 +7,8 @@ const stateSchema = z.object({
 })
 
 function parseState(encoded: string) {
+  if (encoded.length > 2048) return { success: false } as const
+
   try {
     return stateSchema.safeParse(
       JSON.parse(Buffer.from(encoded, 'base64url').toString('utf8')),

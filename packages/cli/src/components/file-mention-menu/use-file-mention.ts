@@ -76,6 +76,7 @@ export function useFileMention({
     if (mentionQueryRef.current !== next.query) {
       mentionQueryRef.current = next.query
       setMentionQuery(next.query)
+      setCandidates([])
       setSelectedIndex(0)
       scrollRef.current?.scrollTo(0)
     }

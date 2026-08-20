@@ -4,18 +4,22 @@ import { database } from '@novacode/database/client'
 import { MessageStatus, Mode, Role } from '@novacode/database/enums'
 import {
   type ChatStreamEvent,
+  findSupportedChatModel,
   type MessagePart,
   messagePartsSchema,
   toolCallArgumentsSchema,
 } from '@novacode/shared'
-import { stepCountIs, streamText } from 'ai'
+import { type LanguageModelUsage, stepCountIs, streamText } from 'ai'
 import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
 import { type SSEStreamingApi, streamSSE } from 'hono/streaming'
 import { z } from 'zod'
 
+import { calculateCreditsForUsage } from '../lib/credits'
 import { isSupportedChatModel, resolveChatModel } from '../lib/models'
+import { ingestAIUsage } from '../lib/polar'
 import type { AuthenticatedEnv } from '../middleware/require-auth'
+import { requireCreditsBalance } from '../middleware/require-credits-balance'
 import { buildSystemPrompt } from '../system-prompt'
 import { createTools } from '../tools'
 
@@ -106,6 +110,7 @@ function getResumableUserMessage<T extends { role: Role }>(
 
 type StreamParams = {
   sessionId: string
+  userId: string
   model: string
   history: HistoryMessage[]
   mode: Mode
@@ -144,10 +149,14 @@ function toStoredParts(parts: MessagePart[]): Prisma.InputJsonValue | undefined 
  * history comes from.
  */
 async function streamAIResponse(stream: SSEStreamingApi, params: StreamParams) {
-  const { sessionId, model, history, mode, cwd, abortController } = params
+  const { sessionId, userId, model, history, mode, cwd, abortController } =
+    params
 
   const startedAt = Date.now()
   const { model: languageModel, providerOptions } = resolveChatModel(model)
+  const provider = findSupportedChatModel(model)?.provider
+
+  let completedUsage: LanguageModelUsage | null = null
 
   // Ordered rather than a flat string: a turn interleaves thinking, tool calls
   // and prose, and the terminal draws each of them differently.
@@ -163,7 +172,7 @@ async function streamAIResponse(stream: SSEStreamingApi, params: StreamParams) {
 
     hasPersistedInterruption = true
 
-    await database.message.create({
+    return database.message.create({
       data: {
         sessionId,
         role: Role.ASSISTANT,
@@ -175,6 +184,32 @@ async function streamAIResponse(stream: SSEStreamingApi, params: StreamParams) {
         duration: Date.now() - startedAt,
       },
     })
+  }
+
+  const ingestUsageForMessage = async (messageId: string) => {
+    if (!completedUsage || !provider) return
+
+    try {
+      const billable = calculateCreditsForUsage({
+        provider,
+        model,
+        usage: completedUsage,
+      })
+
+      await ingestAIUsage({
+        externalCustomerId: userId,
+        eventId: messageId,
+        credits: billable.credits,
+      })
+    } catch (caught) {
+      console.error('Failed to report usage to Polar:', caught)
+    }
+  }
+
+  const persistInterruptedMessageAndUsage = async () => {
+    const message = await persistInterruptedMessage()
+
+    if (message) await ingestUsageForMessage(message.id)
   }
 
   const emit = async (event: ChatStreamEvent) => {
@@ -194,6 +229,9 @@ async function streamAIResponse(stream: SSEStreamingApi, params: StreamParams) {
       // model has had a chance to say anything about what it found.
       stopWhen: tools ? stepCountIs(MAX_STEPS) : undefined,
       abortSignal: abortController.signal,
+      onFinish: event => {
+        completedUsage = event.totalUsage
+      },
     })
 
     for await (const streamPart of result.fullStream) {
@@ -274,7 +312,7 @@ async function streamAIResponse(stream: SSEStreamingApi, params: StreamParams) {
     }
 
     if (isAborted()) {
-      await persistInterruptedMessage()
+      await persistInterruptedMessageAndUsage()
       return
     }
 
@@ -293,12 +331,14 @@ async function streamAIResponse(stream: SSEStreamingApi, params: StreamParams) {
       },
     })
 
+    await ingestUsageForMessage(message.id)
+
     await emit({ type: 'done', messageId: message.id, durationMs })
   } catch (caught) {
     // An abort surfaces here as a thrown `AbortError` rather than a clean loop
     // exit, and that is not a failure worth showing anyone.
     if (isAborted()) {
-      await persistInterruptedMessage()
+      await persistInterruptedMessageAndUsage()
       return
     }
 
@@ -357,7 +397,7 @@ const app = new Hono<AuthenticatedEnv>()
    * session together with the visitor's first message, so the very first reply
    * of every session arrives through here.
    */
-  .post('/:sessionId/resume', async c => {
+  .post('/:sessionId/resume', requireCreditsBalance, async c => {
     const sessionId = c.req.param('sessionId')
     const session = await loadSessionWithMessages(sessionId, c.get('userId'))
 
@@ -393,6 +433,7 @@ const app = new Hono<AuthenticatedEnv>()
         try {
           await streamAIResponse(stream, {
             sessionId,
+            userId: c.get('userId'),
             model: resumableMessage.model,
             history,
             mode: resumableMessage.mode,
@@ -409,7 +450,7 @@ const app = new Hono<AuthenticatedEnv>()
       },
     )
   })
-  .post('/:sessionId', submitValidator, async c => {
+  .post('/:sessionId', requireCreditsBalance, submitValidator, async c => {
     const sessionId = c.req.param('sessionId')
     const session = await loadSessionWithMessages(sessionId, c.get('userId'))
 
@@ -441,6 +482,7 @@ const app = new Hono<AuthenticatedEnv>()
 
         await streamAIResponse(stream, {
           sessionId,
+          userId: c.get('userId'),
           model: data.model,
           history,
           mode: data.mode,

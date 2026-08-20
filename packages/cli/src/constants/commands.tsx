@@ -7,6 +7,7 @@ import {
 } from '@/components/dialogs'
 import { clearAuth } from '@/lib/auth'
 import { performLogin } from '@/lib/oauth'
+import { openBillingPortal, openUpgradeCheckout } from '@/lib/upgrade'
 
 export const COMMANDS: Command[] = [
   {
@@ -86,13 +87,39 @@ export const COMMANDS: Command[] = [
     name: 'upgrade',
     description: 'Buy more credits',
     value: '/upgrade',
-    action: ctx => ctx.toast.show({ message: 'Opening credits checkout...' }),
+    action: async ctx => {
+      ctx.toast.show({ message: 'Opening credits checkout...' })
+
+      try {
+        await openUpgradeCheckout()
+        ctx.toast.show({ message: 'Checkout open in browser', variant: 'success' })
+      } catch (caught) {
+        ctx.toast.show({
+          variant: 'error',
+          message:
+            caught instanceof Error ? caught.message : 'Could not open checkout',
+        })
+      }
+    },
   },
   {
     name: 'usage',
     description: 'Open billing portal in your browser',
     value: '/usage',
-    action: ctx => ctx.toast.show({ message: 'Opening billing portal...' }),
+    action: async ctx => {
+      ctx.toast.show({ message: 'Opening billing portal...' })
+
+      try {
+        await openBillingPortal()
+        ctx.toast.show({ message: 'Portal open in browser', variant: 'success' })
+      } catch (caught) {
+        ctx.toast.show({
+          variant: 'error',
+          message:
+            caught instanceof Error ? caught.message : 'Could not open portal',
+        })
+      }
+    },
   },
   {
     name: 'exit',

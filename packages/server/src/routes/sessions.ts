@@ -8,6 +8,7 @@ import { HTTPException } from 'hono/http-exception'
 import { z } from 'zod'
 
 import type { AuthenticatedEnv } from '../middleware/require-auth'
+import { requireCreditsBalance } from '../middleware/require-credits-balance'
 
 const createSessionSchema = z.object({
   title: z.string().min(1).max(200),
@@ -71,7 +72,7 @@ const app = new Hono<AuthenticatedEnv>()
 
     return c.json(session)
   })
-  .post('/', createSessionValidator, async c => {
+  .post('/', requireCreditsBalance, createSessionValidator, async c => {
     const { initialMessage, model, ...data } = c.req.valid('json')
 
     const session = await database.session.create({

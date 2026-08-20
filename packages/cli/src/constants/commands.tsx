@@ -5,6 +5,8 @@ import {
   SessionsDialog,
   ThemeDialog,
 } from '@/components/dialogs'
+import { clearAuth } from '@/lib/auth'
+import { performLogin } from '@/lib/oauth'
 
 export const COMMANDS: Command[] = [
   {
@@ -57,14 +59,28 @@ export const COMMANDS: Command[] = [
     name: 'login',
     description: 'Sign in with your browser',
     value: '/login',
-    action: ctx => ctx.toast.show({ message: 'Opening browser for login...' }),
+    action: async ctx => {
+      ctx.toast.show({ message: 'Opening browser for login...' })
+
+      try {
+        await performLogin()
+        ctx.toast.show({ message: 'Signed in', variant: 'success' })
+      } catch (caught) {
+        ctx.toast.show({
+          variant: 'error',
+          message: caught instanceof Error ? caught.message : 'Login failed',
+        })
+      }
+    },
   },
   {
     name: 'logout',
     description: 'Sign out of your account',
     value: '/logout',
-    action: ctx =>
-      ctx.toast.show({ message: 'Signed out', variant: 'success' }),
+    action: ctx => {
+      clearAuth()
+      ctx.toast.show({ message: 'Signed out', variant: 'success' })
+    },
   },
   {
     name: 'upgrade',

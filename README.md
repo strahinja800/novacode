@@ -94,7 +94,9 @@ bunx prisma db push
 
 ## Running
 
-Two terminals:
+### Locally
+
+Two terminals, with `API_URL="http://localhost:3000"` in `.env`:
 
 ```bash
 bun run dev:server
@@ -104,13 +106,77 @@ bun run dev:cli
 Then `/login` in the CLI, and `/upgrade` to get credits. In the Polar sandbox
 the test card is `4242 4242 4242 4242` with any future date.
 
-To prove tools really run locally, start the CLI from a different directory and
-ask it what is in there:
+### Against a deployed server
+
+Once the server is hosted, only the CLI runs on your machine. Point `API_URL`
+at the deployment and start the CLI alone:
+
+```bash
+bun run dev:cli
+```
+
+### Switching between the two
+
+Change `API_URL`, then:
+
+1. **Restart the CLI.** Bun reads `.env` at process start; `--watch` only
+   reacts to code changes, so a running CLI keeps the old value and sends the
+   wrong `redirect_uri` on login.
+2. **Sign in again.** The token belongs to whichever backend issued it.
+
+Keep both callback URLs registered in Clerk so no dashboard change is needed
+when you switch:
+
+```
+http://localhost:3000/oauth/callback
+https://<your-deployment>/oauth/callback
+```
+
+### As a command, from any directory
+
+Tools operate on the directory the CLI was started in, not on the repo. To use
+it the way it is meant to be used, install the launcher once:
+
+```bash
+cd packages/cli
+bun link
+```
+
+Then, from any project:
 
 ```bash
 cd ~/some-other-project
-bun run --watch /path/to/novacode/packages/cli/src/index.tsx
+novacode
 ```
+
+The launcher lives at `packages/cli/bin/novacode`. It resolves `.env` relative
+to its own location rather than to the working directory, so configuration
+still comes from this repo no matter where you run it. `bun link` symlinks back
+to the repo, so the command always runs the current code — no rebuild after
+editing.
+
+Ask it what is in the directory. It should describe that project, not this one.
+That is the architecture working.
+
+## Deploying the server
+
+The server is the only thing that gets hosted. On [Railway](https://railway.com),
+pointing at the GitHub repository:
+
+1. Railway detects the monorepo and creates a service per package. **Only the
+   `server` service matters** — `cli` and `database` will fail to build, which
+   is expected. Delete them.
+2. In the server service, **Variables → raw editor**, paste the contents of
+   `.env`. Set `PUBLIC_APP_ORIGIN` to the deployment URL, or the redirect after
+   checkout will point at an address only the proxy can reach.
+3. **Settings → Networking → Generate Domain.** Port 3000 is detected
+   automatically.
+4. Add `https://<your-deployment>/oauth/callback` to the Clerk OAuth
+   application's redirect URLs.
+
+To check it is up, request `/sessions`. A `401` with
+`{"error":"Sign in with /login"}` is the healthy answer — the route exists and
+Clerk initialised. `/` returns 404 by design; nothing is mounted there.
 
 ## Using it
 
@@ -163,6 +229,7 @@ bun run dev:cli       # CLI in watch mode
 bun run dev:server    # server in hot-reload mode
 bun run typecheck     # all four packages
 bun run lint          # eslint across all four packages
+novacode              # the linked CLI, runnable from anywhere
 ```
 
 ## Notes

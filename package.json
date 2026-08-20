@@ -7,6 +7,8 @@
   "scripts": {
     "dev:cli": "bun run --watch packages/cli/src/index.tsx",
     "dev:server": "bun run --hot packages/server/src/index.ts",
+    "build:cli": "bun run --filter @novacode/cli build",
+    "link:cli": "bun run build:cli && cd packages/cli && bun link",
     "lint": "eslint packages/cli/src packages/shared/src packages/server/src packages/database/src",
     "typecheck": "bun run typecheck:shared && bun run typecheck:database && bun run typecheck:server && bun run typecheck:cli",
     "typecheck:shared": "tsc --noEmit --project packages/shared/tsconfig.json",
@@ -27,6 +29,7 @@
     "typescript-eslint": "^8.60.0"
   },
   "dependencies": {
-    "@types/node": "^26.1.1"
+    "@types/node": "^26.1.1",
+    "dotenv": "^17.4.2"
   }
 }

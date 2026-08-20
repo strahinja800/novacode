@@ -40,7 +40,8 @@ export async function createCheckoutUrl({
   externalCustomerId,
   requestUrl,
 }: CreateCheckoutUrlParams): Promise<string> {
-  const successUrl = new URL('/billing/success', requestUrl).toString()
+  const baseUrl = process.env.PUBLIC_APP_ORIGIN ?? new URL(requestUrl).origin
+  const successUrl = new URL('/billing/success', baseUrl).toString()
 
   const checkout = await polar.checkouts.create({
     products: [requireEnv('POLAR_PRODUCT_ID')],

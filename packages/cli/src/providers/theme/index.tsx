@@ -54,7 +54,7 @@ function persistTheme(theme: Theme) {
       'utf8',
     )
   } catch {
-    // Persisting is best effort. The theme still applies for this session.
+    void 0
   }
 }
 

@@ -12,8 +12,6 @@ export function Home() {
 
   const handleSubmit = useCallback(
     (text: string) => {
-      // Carried through router state rather than read again on the next
-      // screen: this is a snapshot of what was chosen at the moment of sending.
       navigate('sessions/new', { state: { message: text, mode, model } })
     },
     [navigate, mode, model],

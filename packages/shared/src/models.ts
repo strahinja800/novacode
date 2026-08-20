@@ -1,4 +1,3 @@
-/** What a provider charges, in USD per million tokens. */
 export type ModelPricing = {
   inputPerMillion: number
   outputPerMillion: number
@@ -13,33 +12,12 @@ export type SupportedChatModelDefinition = {
   pricing: ModelPricing
 }
 
-/**
- * The models this app is willing to run.
- *
- * `as const satisfies` is doing real work here: `satisfies` checks every entry
- * against the shape (a typo in `provider` fails the build), while `as const`
- * keeps the literal ids so `SupportedChatModelId` is a union of exactly these
- * strings rather than plain `string`.
- *
- * Prices are the providers' list rates. We bill against list rather than our
- * actual cost, so prompt caching on the provider's side stays margin instead of
- * becoming a discount we have to model.
- *
- * The `openai` provider is kept in the union because the server is
- * provider-agnostic and adding one is a single entry — but an entry needs a
- * verified id and verified pricing, and inventing either would put wrong
- * numbers straight into the billing math.
- *
- * Several Google models are listed for a reason beyond taste: the free tier
- * caps requests per day *per model*, and one agentic turn spends a request per
- * step. Switching model is how you get a fresh budget.
- */
 export const SUPPORTED_CHAT_MODELS = [
   {
     id: 'gemini-3.7-flash',
     label: 'Gemini 3.7 Flash',
     provider: 'google',
-    // List rate through 2026-12-31; Google doubles it on 2027-01-01.
+
     pricing: { inputPerMillion: 0.75, outputPerMillion: 3.75 },
   },
   {
@@ -52,7 +30,7 @@ export const SUPPORTED_CHAT_MODELS = [
     id: 'gemini-3.6-flash',
     label: 'Gemini 3.6 Flash',
     provider: 'google',
-    // Same list rate as 3.7 Flash, and the same doubling on 2027-01-01.
+
     pricing: { inputPerMillion: 0.75, outputPerMillion: 3.75 },
   },
   {
@@ -85,8 +63,4 @@ export function findSupportedChatModel(
   return SUPPORTED_CHAT_MODELS.find(model => model.id === id)
 }
 
-/**
- * A model on a provider with a real free tier, so the app runs without a
- * credit card. Switch to an Anthropic id once billing is set up.
- */
 export const DEFAULT_CHAT_MODEL_ID: SupportedChatModelId = 'gemini-3.7-flash'

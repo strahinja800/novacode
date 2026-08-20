@@ -15,8 +15,6 @@ const ACTIVE_MARKER = String.fromCharCode(0x2022)
 const LABEL_COL_WIDTH =
   Math.max(...SUPPORTED_CHAT_MODELS.map(model => model.label.length)) + 4
 
-// `SUPPORTED_CHAT_MODELS` is `as const`, so its entries are deeply readonly and
-// the list component's `items: T[]` will not take it as-is.
 const MODELS: SupportedChatModel[] = [...SUPPORTED_CHAT_MODELS]
 
 export function ModelsDialog() {

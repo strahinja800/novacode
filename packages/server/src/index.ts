@@ -17,9 +17,6 @@ app.use(
     tracesSampleRate: 1.0,
     enableLogs: true,
     dataCollection: {
-      // To disable sending user data and HTTP bodies, uncomment the lines below.
-      // userInfo: false,
-      // httpBodies: [],
     },
   }),
 )
@@ -64,6 +61,8 @@ const routes = app
   .route('/billing', billing)
   .route('/sessions', sessions)
   .route('/chat', chat)
+
+export type { NovaCodeUIMessage } from './routes/chat'
 
 export type AppType = typeof routes
 

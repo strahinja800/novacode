@@ -1,4 +1,4 @@
-import { Mode } from '@novacode/database/enums'
+import { Mode } from '@novacode/shared'
 import { TextAttributes } from '@opentui/core'
 
 import { DialogSearchList } from '@/components/dialog-search-list'

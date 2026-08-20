@@ -16,8 +16,6 @@ export function ThemeDialog() {
   const colors = useThemeColors()
   const { close } = useDialog()
 
-  // Moving the highlight repaints the whole UI, so dismissing without choosing
-  // has to put back whatever was active when the dialog opened.
   const originalThemeRef = useRef<Theme>(theme)
   const committedRef = useRef(false)
 
@@ -46,9 +44,7 @@ export function ThemeDialog() {
       emptyText='No theme by that name'
       renderItem={(item, isSelected) => (
         <>
-          {/* Marks the theme that is actually persisted, not the one being
-              previewed. Without it, browsing repaints the UI and the visitor
-              loses track of what they arrived with. */}
+          {}
           <box
             width={MARKER_COL_WIDTH}
             flexShrink={0}

@@ -2,17 +2,6 @@ import { RGBA } from '@opentui/core'
 
 import type { Theme, ThemeColors } from './types'
 
-/**
- * Standard ANSI palette slots.
- *
- * `RGBA.fromIndex` produces a color with "indexed" intent, which the renderer
- * emits as a palette reference rather than a literal RGB triplet. The user's
- * terminal decides what slot 6 actually looks like, which is the whole point.
- *
- * Passing a bare string like 'cyan' does NOT do this. OpenTUI resolves named
- * colors through a fixed hex table, so a string is just a hex value wearing a
- * friendly name and the terminal never gets a say.
- */
 const ANSI = {
   black: 0,
   red: 1,
@@ -36,15 +25,8 @@ type AccentSlots = {
   selection: number
 }
 
-/**
- * Every preset shares one surface and text vocabulary and differs only in which
- * hue carries the accent. That is a deliberate consequence of staying on the
- * ANSI palette: there is no room for eleven bespoke ramps, and the restraint
- * matches "cyan as a rationed light source" from the design system.
- */
 function buildColors({ accent, selection }: AccentSlots): ThemeColors {
   return {
-    // The terminal's own background. We do not repaint the room.
     ground: RGBA.defaultBackground(),
     raised: RGBA.fromIndex(ANSI.black),
     overlay: RGBA.fromIndex(ANSI.brightBlack),
@@ -60,12 +42,8 @@ function buildColors({ accent, selection }: AccentSlots): ThemeColors {
     error: RGBA.fromIndex(ANSI.red),
     info: RGBA.fromIndex(ANSI.cyan),
 
-    // Not derived from `accent`: build mode already wears the accent, so plan
-    // mode has to read as different in every preset, including the cyan one.
     plan: RGBA.fromIndex(ANSI.brightBlue),
 
-    // Bright black is the one slot every terminal renders as "present but
-    // recessive", which is exactly the weight the model's working-out wants.
     thinking: RGBA.fromIndex(ANSI.brightBlack),
   }
 }

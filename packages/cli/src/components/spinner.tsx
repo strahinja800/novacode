@@ -1,11 +1,11 @@
 import 'opentui-spinner/react'
 
-import { Mode } from '@novacode/database/enums'
+import { Mode, type ModeType } from '@novacode/shared'
 
 import { useTheme } from '@/providers/theme'
 
 type Props = {
-  mode?: Mode
+  mode?: ModeType
 }
 
 export function Spinner({ mode = Mode.BUILD }: Props) {

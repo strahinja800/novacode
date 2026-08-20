@@ -51,7 +51,6 @@ export function useDialogSearchList<T>({
     setQuery(input.value)
     setSelectedIndex(0)
 
-    // Jump back to the top of the list whenever the query changes
     if (scrollRef.current) {
       scrollRef.current.scrollTo(0)
     }
@@ -71,14 +70,6 @@ export function useDialogSearchList<T>({
     onSelect(item)
   }
 
-  /**
-   * Move the highlight and bring it back into view.
-   *
-   * The index is computed out here rather than inside a setState updater,
-   * because highlighting fires `onHighlight`, which itself sets state. Nesting
-   * one state update inside another updater is not safe, and updaters are
-   * supposed to stay pure.
-   */
   function move(delta: number) {
     const nextIndex = Math.min(
       Math.max(0, selectedIndex + delta),

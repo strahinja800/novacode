@@ -1,6 +1,4 @@
-import process from 'node:process'
-
-import { Mode } from '@novacode/database/enums'
+import { Mode } from '@novacode/shared'
 import { useEffect, useMemo, useRef } from 'react'
 import { useLocation, useNavigate } from 'react-router'
 import { z } from 'zod'
@@ -17,19 +15,11 @@ const newSessionStateSchema = z.object({
   model: z.string().min(1),
 })
 
-/**
- * The screen that exists so the visitor never waits on a blank home screen.
- *
- * It renders their message immediately, creates the session in the background,
- * and hands off to the real session screen. Nothing is displayed here that the
- * session screen won't show again — this is a bridge, not a destination.
- */
 export function NewSession() {
   const navigate = useNavigate()
   const location = useLocation()
   const toast = useToast()
 
-  // Effects can fire twice; the session must not be created twice.
   const hasStartedRef = useRef(false)
 
   const state = useMemo(() => {
@@ -38,8 +28,6 @@ export function NewSession() {
     return parsed.success ? parsed.data : null
   }, [location.state])
 
-  // Reached without state (a stray navigation, a reload) — there is nothing to
-  // create, so go back rather than sit on an empty screen.
   useEffect(() => {
     if (!state) navigate('/', { replace: true })
   }, [state, navigate])
@@ -55,13 +43,6 @@ export function NewSession() {
         const response = await apiClient.sessions.$post({
           json: {
             title: state.message.slice(0, 100),
-            path: process.cwd(),
-            model: state.model,
-            initialMessage: {
-              role: 'USER',
-              content: state.message,
-              mode: state.mode,
-            },
           },
         })
 
@@ -77,7 +58,14 @@ export function NewSession() {
 
         navigate(`/sessions/${session.id}`, {
           replace: true,
-          state: { session },
+          state: {
+            session,
+            initialPrompt: {
+              message: state.message,
+              mode: state.mode,
+              model: state.model,
+            },
+          },
         })
       } catch (error) {
         if (ignore) return
@@ -90,7 +78,6 @@ export function NewSession() {
               : 'Failed to create session',
         })
 
-        // Never strand the visitor on a bridge screen that will never resolve.
         navigate('/', { replace: true })
       }
     }

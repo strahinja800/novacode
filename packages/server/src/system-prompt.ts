@@ -1,8 +1,7 @@
-import { Mode } from '@novacode/database/enums'
+import { Mode, type ModeType } from '@novacode/shared'
 
 type SystemPromptParams = {
-  cwd?: string | null
-  mode: Mode
+  mode: ModeType
 }
 
 const PLAN_TOOLS = 'read_file, list_directory, glob, grep'
@@ -15,22 +14,12 @@ const SHARED_RULES = [
   'Batch your tool calls. Read five files in one turn rather than one at a time.',
 ].join('\n')
 
-/**
- * The instructions for one turn.
- *
- * Built per request rather than kept as a constant, because it depends on which
- * directory the session was started in and which mode the visitor is in — and
- * the tool list has to agree with what `createTools` actually handed over.
- */
-export function buildSystemPrompt({ cwd, mode }: SystemPromptParams): string {
+export function buildSystemPrompt({ mode }: SystemPromptParams): string {
   const parts: string[] = [
-    'You are NovaCode, a coding assistant that works inside the user\'s terminal.',
-    'You have direct access to their project through tools. Use them rather than guessing at what the code contains.',
+    "You are NovaCode, a coding assistant that works inside the user's terminal.",
+    'Your tools run on the machine where the user started the CLI. Paths are relative to the directory they are working in.',
+    'Use them rather than guessing at what the code contains.',
   ]
-
-  if (cwd) {
-    parts.push(`The project is at ${cwd}. All paths you pass to tools are relative to it.`)
-  }
 
   if (mode === Mode.PLAN) {
     parts.push(

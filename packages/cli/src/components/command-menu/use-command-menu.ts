@@ -41,7 +41,6 @@ export function useCommandMenu(): UseCommandMenuResult {
     setTextValue(text)
     setSelectedIndex(0)
 
-    // Jump to top of the list when new character is typed
     if (scrollRef.current) {
       scrollRef.current.scrollTo(0)
     }
@@ -58,7 +57,6 @@ export function useCommandMenu(): UseCommandMenuResult {
     } else setShowCommandMenu(false)
   }
 
-  // Resolve command at specific index
   function resolveCommand(index: number): Command | undefined {
     const command = filteredCommands[index]
 
@@ -68,8 +66,6 @@ export function useCommandMenu(): UseCommandMenuResult {
 
     return command
   }
-
-  // Arrow keys to move selection
 
   useKeyboard(key => {
     if (!showCommandMenu || !isTopLayer('command')) return
@@ -81,7 +77,7 @@ export function useCommandMenu(): UseCommandMenuResult {
       key.preventDefault()
       setSelectedIndex((i: number) => {
         const newIndex = Math.max(0, i - 1)
-        // Keep selected in view
+
         const sb = scrollRef.current
         if (sb && newIndex < sb.scrollTop) {
           sb.scrollTo(newIndex)

@@ -65,12 +65,6 @@ export function ToastProvider({ children }: ToastProviderProps) {
     [clearCurrentTimeout],
   )
 
-  /**
-   * Must be memoized. Screens put `toast` in the dependency array of their
-   * fetch effects, so a fresh object on every render of this provider would
-   * abort the in-flight request and start a new one — a cascade of network
-   * calls with no network tab to notice it in.
-   */
   const value = useMemo<ToastContextValue>(() => ({ show }), [show])
 
   return (

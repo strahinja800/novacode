@@ -1,4 +1,4 @@
-import { Mode } from '@novacode/database/enums'
+import { Mode } from '@novacode/shared'
 import { findSupportedChatModel } from '@novacode/shared'
 import { TextAttributes } from '@opentui/core'
 
@@ -11,7 +11,6 @@ export function StatusBar() {
 
   const isPlan = mode === Mode.PLAN
 
-  // The id is what the API wants; the label is what a person reads.
   const modelLabel = findSupportedChatModel(model)?.label ?? model
 
   return (

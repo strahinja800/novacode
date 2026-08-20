@@ -11,10 +11,6 @@ import { useDialog } from '@/providers/dialog'
 import { useThemeColors } from '@/providers/theme'
 import { useToast } from '@/providers/toast'
 
-/**
- * The list route selects only three columns, and this follows it — so trimming
- * that `select` on the server breaks the build here rather than the render.
- */
 type SessionSummary = InferResponseType<
   typeof apiClient.sessions.$get,
   200

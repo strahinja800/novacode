@@ -1,23 +1,35 @@
-import { Mode } from '@novacode/database/enums'
+import { Mode, type ModeType } from '@novacode/shared'
 import { TextAttributes } from '@opentui/core'
+import prettyMilliseconds from 'pretty-ms'
 
-import type {
-  ClientMessagePart,
-  ClientToolCallPart,
-} from '@/hooks/use-chat'
+import type { Message } from '@/hooks/use-chat'
 import { useTheme } from '@/providers/theme'
+
+type ClientMessagePart = Message['parts'][number]
+
+type ToolPart = Extract<
+  ClientMessagePart,
+  { type: `tool-${string}` } | { type: 'dynamic-tool' }
+>
 
 type Props = {
   parts: ClientMessagePart[]
   model: string
-  mode: Mode
-  /** Already humanized, e.g. `4.2s`. Absent while the reply is still arriving. */
-  duration?: string
+  mode?: ModeType
+  durationMs?: number
   streaming?: boolean
-  interrupted?: boolean
 }
 
-/** `read_file` and `readFile` both become `Read file`. */
+function isToolPart(part: ClientMessagePart): part is ToolPart {
+  return part.type === 'dynamic-tool' || part.type.startsWith('tool-')
+}
+
+function getToolName(part: ToolPart): string {
+  return part.type === 'dynamic-tool'
+    ? part.toolName
+    : part.type.slice('tool-'.length)
+}
+
 function formatToolName(name: string): string {
   const words = name
     .replace(/[_-]+/g, ' ')
@@ -28,45 +40,38 @@ function formatToolName(name: string): string {
   return words.charAt(0).toUpperCase() + words.slice(1)
 }
 
-/**
- * The arguments, values only.
- *
- * Keys are dropped because the tool name already says what the value is — the
- * useful part of a `read_file` call is the path, not the word "path".
- */
-function formatToolArguments(part: ClientToolCallPart): string {
-  return Object.values(part.arguments)
-    .filter(value => value !== null && value !== '')
+function formatToolArguments(part: ToolPart): string {
+  const input = part.input
+
+  if (input === null || typeof input !== 'object') return ''
+
+  return Object.values(input as Record<string, unknown>)
+    .filter(value => value !== null && value !== '' && value !== undefined)
     .map(value => String(value))
     .join(' ')
 }
 
 type PartGroup = {
   key: string
-  type: ClientMessagePart['type']
+  isQuiet: boolean
   parts: ClientMessagePart[]
 }
 
-/**
- * Fold runs of same-typed parts into one block.
- *
- * Purely presentational, but it is the difference between one bordered block of
- * reasoning and forty of them stacked on top of each other.
- */
 function groupConsecutiveParts(parts: ClientMessagePart[]): PartGroup[] {
   const groups: PartGroup[] = []
 
   parts.forEach((part, index) => {
+    const isQuiet = isToolPart(part) || part.type === 'reasoning'
     const lastGroup = groups.at(-1)
 
-    if (lastGroup?.type === part.type) {
+    if (lastGroup && lastGroup.isQuiet === isQuiet) {
       lastGroup.parts.push(part)
       return
     }
 
     groups.push({
-      key: part.type === 'tool-call' ? `tool-${part.id}` : `${part.type}-${index}`,
-      type: part.type,
+      key: `${part.type}-${index}`,
+      isQuiet,
       parts: [part],
     })
   })
@@ -77,21 +82,13 @@ function groupConsecutiveParts(parts: ClientMessagePart[]): PartGroup[] {
 export function BotMessage({
   parts,
   model,
-  mode,
-  duration,
+  mode = Mode.BUILD,
+  durationMs,
   streaming = false,
-  interrupted = false,
 }: Props) {
   const { colors } = useTheme()
 
-  // An interrupted reply is history, not an answer: the whole footer recedes
-  // rather than announcing a model and a mode that never finished their work.
-  const footerAttributes = interrupted ? TextAttributes.DIM : 0
-  const markerColor = interrupted
-    ? undefined
-    : mode === Mode.PLAN
-      ? colors.plan
-      : colors.accent
+  const markerColor = mode === Mode.PLAN ? colors.plan : colors.accent
 
   return (
     <box
@@ -99,17 +96,17 @@ export function BotMessage({
       alignItems='center'
     >
       <box
-        paddingY={1}
         width={'100%'}
         gap={1}
       >
-        {groupConsecutiveParts(parts).map(group => (
+        {groupConsecutiveParts(parts).map((group, groupIndex) => (
           <box
             key={group.key}
             paddingX={3}
+            paddingTop={groupIndex === 0 ? 0 : 1}
             width={'100%'}
           >
-            {group.type === 'text' ? (
+            {!group.isQuiet ? (
               <text>
                 {group.parts
                   .map(part => (part.type === 'text' ? part.text : ''))
@@ -122,25 +119,35 @@ export function BotMessage({
                 width={'100%'}
                 paddingLeft={1}
               >
-                {group.parts.map((part, index) =>
-                  part.type === 'reasoning' ? (
+                {group.parts.map((part, index) => {
+                  if (part.type === 'reasoning') {
+                    return (
+                      <text
+                        key={index}
+                        fg={colors.thinking}
+                        attributes={TextAttributes.DIM}
+                      >
+                        {part.text}
+                      </text>
+                    )
+                  }
+
+                  if (!isToolPart(part)) return null
+
+                  const pending =
+                    part.state !== 'output-available' &&
+                    part.state !== 'output-error'
+
+                  return (
                     <text
                       key={index}
                       fg={colors.thinking}
-                      attributes={TextAttributes.DIM}
                     >
-                      {part.text}
+                      {`${formatToolName(getToolName(part))} ${formatToolArguments(part)}`.trim()}
+                      {pending ? '...' : ''}
                     </text>
-                  ) : part.type === 'tool-call' ? (
-                    <text
-                      key={part.id}
-                      fg={colors.thinking}
-                    >
-                      {`${formatToolName(part.name)} ${formatToolArguments(part)}`.trim()}
-                      {part.status === 'calling' ? '...' : ''}
-                    </text>
-                  ) : null,
-                )}
+                  )
+                })}
               </box>
             )}
           </box>
@@ -150,7 +157,7 @@ export function BotMessage({
       {streaming ? null : (
         <box
           paddingX={3}
-          paddingBottom={1}
+          paddingY={1}
           gap={1}
           width={'100%'}
         >
@@ -164,16 +171,14 @@ export function BotMessage({
               flexDirection='row'
               gap={1}
             >
-              <text attributes={footerAttributes}>{mode}</text>
+              <text>{mode}</text>
               <text attributes={TextAttributes.DIM}>›</text>
-              <text attributes={footerAttributes}>{model}</text>
+              <text>{model}</text>
 
-              {interrupted || duration ? (
+              {durationMs != null ? (
                 <>
                   <text attributes={TextAttributes.DIM}>›</text>
-                  <text attributes={footerAttributes}>
-                    {interrupted ? 'interrupted' : duration}
-                  </text>
+                  <text>{prettyMilliseconds(durationMs)}</text>
                 </>
               ) : null}
             </box>

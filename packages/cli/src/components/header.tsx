@@ -19,8 +19,7 @@ export function Header() {
           text='Nova'
           color={colors.muted}
         />
-        {/* Deliberately not accent: the left rule and the status bar already
-            spend the two accent slots The One Cyan Rule allows. */}
+        {}
         <ascii-font
           font='tiny'
           text='Code'

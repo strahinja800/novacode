@@ -1,7 +1,5 @@
 import { zValidator } from '@hono/zod-validator'
 import { database } from '@novacode/database/client'
-import { MessageStatus, Mode, Role } from '@novacode/database/enums'
-import { findSupportedChatModel } from '@novacode/shared'
 import * as Sentry from '@sentry/hono/bun'
 import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
@@ -12,17 +10,6 @@ import { requireCreditsBalance } from '../middleware/require-credits-balance'
 
 const createSessionSchema = z.object({
   title: z.string().min(1).max(200),
-  path: z.string().optional(),
-  model: z.string().refine(id => findSupportedChatModel(id) !== undefined, {
-    message: 'Unsupported model',
-  }),
-  initialMessage: z
-    .object({
-      role: z.enum(Role),
-      content: z.string(),
-      mode: z.enum(Mode),
-    })
-    .optional(),
 })
 
 const createSessionValidator = zValidator(
@@ -57,15 +44,12 @@ const app = new Hono<AuthenticatedEnv>()
 
     const session = await database.session.findFirst({
       where: { id, userId: c.get('userId') },
-      include: {
-        messages: { orderBy: { createdAt: 'asc' } },
-      },
     })
 
     if (!session) {
       Sentry.logger.warn('Session not found', {
         sessionId: id,
-       })
+      })
 
       throw new HTTPException(404, { message: 'Session not found' })
     }
@@ -73,25 +57,13 @@ const app = new Hono<AuthenticatedEnv>()
     return c.json(session)
   })
   .post('/', requireCreditsBalance, createSessionValidator, async c => {
-    const { initialMessage, model, ...data } = c.req.valid('json')
+    const data = c.req.valid('json')
 
     const session = await database.session.create({
       data: {
         ...data,
-
         userId: c.get('userId'),
-        ...(initialMessage && {
-          messages: {
-            create: {
-              ...initialMessage,
-              model,
-              status: MessageStatus.COMPLETE,
-            },
-          },
-        }),
       },
-
-      include: { messages: true },
     })
 
     return c.json(session, 201)

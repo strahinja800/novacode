@@ -59,7 +59,6 @@ export function KeyboardLayerProvider({
     [],
   )
 
-  // Handle keyboard events
   useKeyboard(key => {
     if (!key.ctrl || key.name !== 'c') return
 
@@ -71,7 +70,6 @@ export function KeyboardLayerProvider({
       if (responder && responder()) return
     }
 
-    // No responder handled the event, so we can exit the process
     exitApp(renderer)
   })
 

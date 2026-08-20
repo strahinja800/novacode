@@ -7,51 +7,13 @@ datasource db {
   provider = "postgresql"
 }
 
-enum Role {
-  USER
-  ASSISTANT
-  ERROR
-}
-
-enum Mode {
-  BUILD
-  PLAN
-}
-
-enum MessageStatus {
-  COMPLETE
-  INTERRUPTED
-}
-
-/// No `User` model on purpose: identity comes from a third-party auth provider
-/// in a later chapter, so we store only the id it hands us.
 model Session {
-  id        String    @id @default(cuid())
+  id        String   @id @default(cuid())
   userId    String
   title     String
-  path      String?
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  messages  Message[]
+  messages  Json     @default("[]")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([userId])
-}
-
-model Message {
-  id        String        @id @default(cuid())
-  sessionId String
-  role      Role
-  content   String
-  mode      Mode
-  model     String
-  status    MessageStatus @default(COMPLETE)
-  /// Ordered reasoning / tool-call / text parts. JSON because the shape varies
-  /// per part; `messagePartsSchema` in @novacode/shared is what validates it.
-  parts     Json          @default("[]")
-  duration  Int?
-  createdAt DateTime      @default(now())
-
-  session Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-
-  @@index([sessionId])
 }

@@ -1,11 +1,11 @@
-import { Mode } from '@novacode/database/enums'
+import { Mode, type ModeType } from '@novacode/shared'
 
 import { useTheme } from '@/providers/theme'
 
 type Props = {
   message: string
-  /** The mode this was sent in, which may not be the mode selected now. */
-  mode?: Mode
+
+  mode?: ModeType
 }
 
 export function UserMessage({ message, mode = Mode.BUILD }: Props) {

@@ -1,4 +1,4 @@
-import { Mode } from '@novacode/database/enums'
+import { Mode } from '@novacode/shared'
 import type { TextareaRenderable } from '@opentui/core'
 import { useKeyboard, useRenderer } from '@opentui/react'
 import { useCallback, useEffect, useRef } from 'react'
@@ -104,7 +104,6 @@ export function InputBar({ onSubmit, disabled = false }: Props) {
     syncMentionMenu()
   }, [handleContentChange, syncMentionMenu])
 
-  // Wire up textarea submit handler
   useEffect(() => {
     const textarea = textareaRef.current
     if (!textarea) return
@@ -131,19 +130,15 @@ export function InputBar({ onSubmit, disabled = false }: Props) {
     handleSubmit()
   }
 
-  // Tab switches mode. Only at the base layer, so it stays available to a
-  // dialog's own filtering while one is open.
   useKeyboard(key => {
     if (disabled) return
     if (!isTopLayer('base')) return
     if (key.name !== 'tab') return
 
-    // Claimed here, or the textarea also takes it and inserts a tab character.
     key.preventDefault()
     toggleMode()
   })
 
-  // Register the base layer responder for ctrl+c dismissal
   useEffect(() => {
     setResponder('base', () => {
       if (disabled) return false
